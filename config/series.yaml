@@ -60,6 +60,13 @@ fetch:
   treasury:
     start_year: 2024
 
+# Scheduled cadence (GitHub Actions): the daily job pulls every source not
+# listed here; Saturday's job pulls the weekly ones, the 12th of each month the
+# monthly ones (after TSMC/MOPS publish around the 10th). Local runs pull all.
+cadence:
+  weekly: [cftc, naaim, aaii, factset, btos]
+  monthly: [finra, tsmc, mops, shiller, uvik, eia]
+
 # First match wins (fnmatch on "source:series"). freq: 1d, 1w, 2w, 1mo, 3mo.
 # lag_days (days after obs_date) applies only when a row has no vintage. Monthly
 # and quarterly rows are dated the first day of the period, as FRED does. Out-of-bounds rows are

@@ -1,10 +1,12 @@
 """Pull every source, validate, and append to the raw store.
 
-Usage: python -m gauges.ingest [--only fred,cboe] [--skip yfinance] [--full] [--db PATH]
+Usage: python -m gauges.ingest [--cadence daily|weekly|monthly|all] [--only fred,cboe] [--skip yfinance]
+                               [--full] [--db PATH]
 
 Fetches run in parallel threads; all writes happen on the main thread. Each
 source's outcome is recorded in fetch_log, and every rejected row, out-of-bounds
 value, cross-check mismatch and invalid events.yaml entry in validation_flags.
+The rows a run added are also written to data/archive (see gauges.archive).
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
+from gauges.archive import export_run
 from gauges.config import ROOT, load_baskets, load_events, load_series_config
 from gauges.http import MissingKey, redact
 from gauges.schema import coerce
@@ -72,6 +75,8 @@ def write(store: Store, ctx: Context, name: str, result: FetchResult, run_id: st
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--cadence", choices=["daily", "weekly", "monthly", "all"], default="all",
+                        help="scheduled group from config/series.yaml (default: all sources)")
     parser.add_argument("--only", help="comma-separated sources: " + ",".join(SOURCES))
     parser.add_argument("--skip", help="comma-separated sources to leave out")
     parser.add_argument("--full", action="store_true", help="ignore stored state and re-pull full history")
@@ -79,7 +84,12 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
+    cfg = load_series_config()
     names = list(SOURCES)
+    if args.cadence != "all":
+        grouped = {s for group in cfg.cadence.values() for s in group}
+        names = ([n for n in names if n not in grouped] if args.cadence == "daily"
+                 else [n for n in names if n in cfg.cadence.get(args.cadence, [])])
     for flag, keep in ((args.only, True), (args.skip, False)):
         if flag:
             chosen = {s.strip() for s in flag.split(",")}
@@ -95,7 +105,7 @@ def main() -> None:
     for err in event_errors:
         store.flag(run_id, fetched_at, "events", "reject", detail=err)
     ctx = Context(
-        cfg=load_series_config(), baskets=load_baskets(), last=store.last_dates(),
+        cfg=cfg, baskets=load_baskets(), last=store.last_dates(),
         snapshot_keys={t: store.snapshot_keys(t, cols) for t, (mode, cols) in SNAPSHOT_TABLES.items() if mode == "group"},
         now_et=datetime.now(ET), full=args.full, vintages=store.last_vintages())
 
@@ -127,6 +137,8 @@ def main() -> None:
             store.flag(run_id, fetched_at, "crosscheck", "flag", obs_date=c.obs_date, value=c.primary,
                        detail=f"{c.name}: {c.detail}")
     print(report(outcomes, checks, len(events), event_errors))
+    archived = export_run(store, run_id)
+    print(f"archived to data/archive: {archived or 'nothing new'}")
     store.close()
     if outcomes and all(o.status in ("failed", "missing_key") for o in outcomes):
         raise SystemExit(1)

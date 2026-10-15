@@ -1,0 +1,12 @@
+# Only the dashboard, its JSON and the validation report are served.
+src/
+tests/
+scripts/
+config/
+data/archive/
+data/*.duckdb
+.github/
+.claude/
+BUILD_PROMPT.md
+pyproject.toml
+Makefile

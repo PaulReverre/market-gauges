@@ -127,6 +127,7 @@ class FetchConfig(Strict):
 
 class SeriesConfig(Strict):
     fetch: FetchConfig
+    cadence: dict[Literal["weekly", "monthly"], list[str]] = Field(default_factory=dict)
     specs: list[SeriesSpec]
 
     def spec_for(self, source: str, series: str) -> SeriesSpec | None:
