@@ -67,6 +67,7 @@ class Indicator(Strict):
     fragility: Literal["higher_is_fragile", "lower_is_fragile"] | None = None
     cnn: bool = False
     notes: str | None = None
+    validation: str | None = None            # set by the Phase 3 backtest when it changes an entry
 
     @field_validator("inputs", mode="before")
     @classmethod

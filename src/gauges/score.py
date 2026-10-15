@@ -355,7 +355,7 @@ def latest_summary(reg, scored, results, frag, cnn, ban, F, penalty) -> dict:
         "fragility": {"score": None if pd.isna(frag_row["fragility"]) else round(float(frag_row["fragility"]), 1),
                       "breadth_divergence": None if pd.isna(frag_row["divergence"]) else bool(frag_row["divergence"]),
                       "validated": reg.fragility.validated,
-                      "drawdown_probability": "Not validated" if not reg.fragility.validated else None},
+                      "drawdown_probability": drawdown_probability(F, reg, frag_row["fragility"])},
         "cnn_replica": None if pd.isna(cnn.iloc[-1]) else round(float(cnn.iloc[-1]), 1),
         "banners": [k for k, v in ban.iloc[-1].items() if bool(v)],
         "ai_fragility": ai_fragility(scored, F),
@@ -363,6 +363,19 @@ def latest_summary(reg, scored, results, frag, cnn, ban, F, penalty) -> dict:
         "open_weight_token_share": _last_round(F.open_weight_share()),
         "gaps": gaps,
     }
+
+
+def drawdown_probability(F: Features, reg: Registry, fragility_score: float):
+    """Empirical 10%+ S&P drawdown rate within 63 days for the current fragility decile (Phase 3 backtest)."""
+    if not reg.fragility.validated or pd.isna(fragility_score):
+        return "Not validated"
+    try:
+        deciles = F.con.execute("SELECT decile, upper_edge, dd10_rate, days FROM fragility_deciles ORDER BY decile").df()
+    except Exception:  # noqa: BLE001 - table appears after the first backtest
+        return "Not validated"
+    row = deciles[deciles["upper_edge"] >= fragility_score].iloc[0]
+    return {"decile": int(row["decile"]), "probability_pct": round(float(row["dd10_rate"]), 1),
+            "sample_days": int(row["days"])}
 
 
 def _delta(s: pd.Series, n: int):
@@ -385,8 +398,11 @@ def render_text(summary: dict) -> str:
         lines.append("   1W drivers: " + ", ".join(f"{d['id']} {d['change']:+}" for d in v["drivers_1w"]))
         lines.append("   1M drivers: " + ", ".join(f"{d['id']} {d['change']:+}" for d in v["drivers_1m"]))
     f = summary["fragility"]
+    prob = f["drawdown_probability"]
+    prob = prob if isinstance(prob, str) else (f"{prob['probability_pct']}% (decile {prob['decile']}, "
+                                               f"{prob['sample_days']} days)")
     lines += ["", f"Fragility overlay: {f['score']} (breadth divergence: {f['breadth_divergence']}; "
-                  f"10%+ drawdown probability: {f['drawdown_probability']})",
+                  f"10%+ drawdown probability in 63 days: {prob})",
               f"CNN-method replica: {summary['cnn_replica']}",
               f"Banners: {', '.join(summary['banners']) or 'none'}",
               "AI fragility flags: " + ", ".join(f"{k}={v}" for k, v in summary["ai_fragility"].items()),

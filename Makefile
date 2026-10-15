@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup probe ingest score refresh test
+.PHONY: setup probe ingest score refresh backtest test
 
 setup:
 	python3.11 -m venv .venv
@@ -16,6 +16,9 @@ score:
 	$(PY) -m gauges.score
 
 refresh: ingest score
+
+backtest:
+	$(PY) -m gauges.backtest --apply
 
 test:
 	$(PY) -m pytest

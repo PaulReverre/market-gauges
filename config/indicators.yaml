@@ -73,8 +73,8 @@ indicators:
     weight: 4
     expected_freq: 1d
     role: leading
-    fragility: lower_is_fragile
     notes: A thin premium means complacency.
+    validation: "Phase 3 backtest: removed from fragility overlay (more fragile did not precede deeper drawdowns)"
   - id: vol_vvix
     gauge: G1
     pillar: volatility
@@ -94,8 +94,8 @@ indicators:
     direction: lower_is_greed
     weight: 2
     expected_freq: 1d
-    role: leading
-    fragility: higher_is_fragile
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (wrong sign in full sample); removed from fragility overlay (more fragile did not precede deeper drawdowns)"
   - id: vol_9d
     gauge: G1
     pillar: volatility
@@ -123,8 +123,9 @@ indicators:
     direction: lower_is_greed
     weight: 4
     expected_freq: 1d
-    role: coincident
+    role: display
     cnn: true
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 3/8 regimes)"
   - id: eq_pc5
     gauge: G1
     pillar: volatility
@@ -153,7 +154,7 @@ indicators:
     weight: 0
     expected_freq: 1d
     role: display
-    fragility: higher_is_fragile
+    validation: "Phase 3 backtest: removed from fragility overlay (holds in only 1/8 regimes)"
   # -------------------------------------------------------- trend_breadth
   - id: eq_mom125
     gauge: G1
@@ -200,8 +201,9 @@ indicators:
     direction: higher_is_greed
     weight: 5
     expected_freq: 1d
-    role: leading
+    role: display
     notes: Leading when it diverges from the index. Survivorship-biased (current members).
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 3/8 regimes)"
   - id: br_ew
     gauge: G1
     pillar: trend_breadth
@@ -212,8 +214,8 @@ indicators:
     direction: higher_is_greed
     weight: 4
     expected_freq: 1d
-    role: leading
-    fragility: lower_is_fragile
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 3/8 regimes); removed from fragility overlay (holds in only 3/8 regimes)"
   - id: br_beta
     gauge: G1
     pillar: trend_breadth
@@ -332,8 +334,8 @@ indicators:
     direction: higher_is_greed
     weight: 3
     expected_freq: 1mo
-    role: leading
-    fragility: higher_is_fragile
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 1/8 regimes); removed from fragility overlay (more fragile did not precede deeper drawdowns)"
   # ----------------------------------------------------------- safe_haven
   - id: eq_safehaven
     gauge: G1
@@ -355,7 +357,8 @@ indicators:
     direction: lower_is_greed
     weight: 2
     expected_freq: 1w   # daily values, published weekly (H.10)
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
   - id: xa_cugold
     gauge: G1
     pillar: safe_haven
@@ -366,7 +369,8 @@ indicators:
     direction: higher_is_greed
     weight: 2
     expected_freq: 1d
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
 
   # ======================================================================
   # G2 Equity Fundamental State
@@ -380,7 +384,8 @@ indicators:
     weight: 5
     expected_freq: 1w
     lookback_pct: 20y
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 2/5 regimes)"
   - id: gr_cfnai
     gauge: G2
     pillar: growth
@@ -390,7 +395,8 @@ indicators:
     weight: 5
     expected_freq: 1mo
     lookback_pct: 20y
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample and sign holds in only 3/7 regimes)"
   - id: gr_regional
     gauge: G2
     pillar: growth
@@ -404,8 +410,9 @@ indicators:
     weight: 4
     expected_freq: 1mo
     lookback_pct: 20y
-    role: leading
+    role: display
     notes: Richmond and Kansas City composites are not on FRED (3 of 5 surveys).
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 1/6 regimes)"
   - id: gr_claims
     gauge: G2
     pillar: growth
@@ -415,7 +422,8 @@ indicators:
     weight: 5
     expected_freq: 1w
     lookback_pct: 20y
-    role: leading
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (wrong sign in full sample and sign holds in only 3/7 regimes)"
   - id: gr_sahm
     gauge: G2
     pillar: growth
@@ -425,7 +433,8 @@ indicators:
     weight: 5
     expected_freq: 1mo
     lookback_pct: 20y
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
   - id: gr_permits
     gauge: G2
     pillar: growth
@@ -511,7 +520,8 @@ indicators:
     weight: 4
     expected_freq: 1mo
     lookback_pct: 20y
-    role: context
+    role: display
+    validation: "Phase 3 backtest: demote context -> display (wrong sign in full sample)"
   - id: va_eq_gdp
     gauge: G2
     pillar: valuation
@@ -523,7 +533,8 @@ indicators:
     weight: 3
     expected_freq: 3mo
     lookback_pct: 20y
-    role: context
+    role: display
+    validation: "Phase 3 backtest: demote context -> display (sign holds in only 2/6 regimes)"
   - id: va_conc
     gauge: G2
     pillar: valuation
@@ -546,7 +557,8 @@ indicators:
     weight: 5
     expected_freq: 1mo
     lookback_pct: 20y
-    role: leading
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (wrong sign in full sample and sign holds in only 3/8 regimes)"
   - id: rl_real10
     gauge: G2
     pillar: rates_liquidity
@@ -566,8 +578,9 @@ indicators:
     weight: 0
     expected_freq: 1d
     lookback_pct: 20y
-    role: context
+    role: display
     notes: Context only. A re-steepening after inversion is flagged separately.
+    validation: "Phase 3 backtest: demote context -> display (wrong sign in full sample and sign holds in only 3/8 regimes)"
   - id: rl_liq
     gauge: G2
     pillar: rates_liquidity
@@ -590,7 +603,8 @@ indicators:
     weight: 4
     expected_freq: 3mo
     lookback_pct: 20y
-    role: leading
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (wrong sign in full sample and sign holds in only 0/7 regimes)"
   - id: infl
     gauge: G2
     pillar: rates_liquidity
@@ -622,7 +636,8 @@ indicators:
     weight: 3
     expected_freq: 3mo
     lookback_pct: 20y
-    role: leading
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (wrong sign in full sample and sign holds in only 2/6 regimes)"
   - id: cc_umich
     gauge: G2
     pillar: consumer_credit
@@ -632,7 +647,8 @@ indicators:
     weight: 3
     expected_freq: 1mo
     lookback_pct: 20y
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 3/8 regimes)"
 
   # ======================================================================
   # G3 AI Sentiment & Volatility
@@ -646,7 +662,8 @@ indicators:
     direction: higher_is_greed
     weight: 5
     expected_freq: 1d
-    role: coincident
+    role: leading
+    validation: "Phase 3 backtest: relabel coincident -> leading (wrong sign in full sample; fits leading (t=2.0))"
   - id: ai_rs
     gauge: G3
     pillar: trend_rs
@@ -657,7 +674,8 @@ indicators:
     direction: higher_is_greed
     weight: 5
     expected_freq: 1d
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
   - id: ai_breadth
     gauge: G3
     pillar: trend_rs
@@ -826,8 +844,9 @@ indicators:
     weight: 5
     expected_freq: 3mo
     lookback_pct: all
-    role: leading
+    role: display
     notes: Cash capex only; finance-lease additions are not yet added per company.
+    validation: "Phase 3 backtest: demote leading -> display (wrong sign in full sample)"
   - id: sp_guide_cur
     gauge: G4
     pillar: spend
@@ -868,7 +887,8 @@ indicators:
     weight: 5
     expected_freq: 1mo
     lookback_pct: all
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
   - id: sc_odm
     gauge: G4
     pillar: supply_chain
@@ -880,8 +900,9 @@ indicators:
     weight: 4
     expected_freq: 1mo
     lookback_pct: all
-    role: coincident
+    role: display
     notes: Monthly inputs aligned on obs_date before summing.
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
   - id: sc_nvda_dc
     gauge: G4
     pillar: supply_chain
@@ -1081,8 +1102,9 @@ indicators:
     weight: 3
     expected_freq: 1d
     lookback_pct: all
-    role: leading
+    role: display
     notes: Drawdown only until ORCL/CRWV option IV snapshots accumulate.
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 1/8 regimes)"
   - id: fc_events
     gauge: G4
     pillar: financing
