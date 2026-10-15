@@ -1,0 +1,7 @@
+# Phase 0 (source probe). Phase 1 adds pandas, numpy, scipy, duckdb, pydantic,
+# pyyaml, jinja2, requests-cache and pytest per BUILD_PROMPT.md Section 4.
+httpx>=0.28
+tenacity>=9.0
+python-dotenv>=1.0
+openpyxl>=3.1
+yfinance>=1.7
