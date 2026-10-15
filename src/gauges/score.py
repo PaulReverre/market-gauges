@@ -335,6 +335,7 @@ def latest_summary(reg, scored, results, frag, cnn, ban, F, penalty) -> dict:
             "pillars": {p: (None if pd.isna(v) else round(float(v), 1)) for p, v in r.pillars.iloc[-1].items()},
             "change_1w": _delta(r.gauge["display"], 5), "change_1m": _delta(r.gauge["display"], 21),
             "drivers_1w": attribution(r.contributions, 5), "drivers_1m": attribution(r.contributions, 21),
+            "contributions": {k: round(float(v), 2) for k, v in r.contributions.iloc[-1].items() if abs(v) > 1e-9},
         }
     gauges["G2"]["infl_penalty"] = None if pd.isna(penalty.iloc[-1]) else round(float(penalty.iloc[-1]), 1)
     gaps = {"missing": [], "stale": [], "short_history": []}

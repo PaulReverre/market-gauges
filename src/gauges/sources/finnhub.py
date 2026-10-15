@@ -2,7 +2,8 @@
 
 The free calendar only returns upcoming dates and stock/earnings only the last
 four quarters, so history accumulates from the first run; historical report
-dates come from EDGAR 8-K Item 2.02 filings instead.
+dates come from EDGAR 8-K Item 2.02 filings instead. The all-company calendar is
+capped at 1,500 rows (about two weeks), so tracked tickers are queried one by one.
 """
 from __future__ import annotations
 
@@ -53,8 +54,15 @@ def fetch(ctx: Context) -> FetchResult:
     us_basket = [t for t in ctx.baskets.tickers if "." not in t]
     universe = set(us_basket + ctx.cfg.fetch.edgar.tickers)
     end = ctx.today + timedelta(days=ctx.cfg.fetch.finnhub.calendar_days_ahead)
-    calendar = parse_calendar(api("calendar/earnings", **{"from": (ctx.today - timedelta(days=7)).isoformat(),
-                                                           "to": end.isoformat()}), universe)
+    window = {"from": (ctx.today - timedelta(days=7)).isoformat(), "to": end.isoformat()}
+    frames: list[pd.DataFrame] = []
+
+    def calendar_for(ticker: str) -> list:
+        frames.append(parse_calendar(api("calendar/earnings", symbol=ticker, **window), universe))
+        return []
+
+    each(sorted(universe), calendar_for, notes)
+    calendar = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     rows = each(us_basket, lambda t: parse_surprises(api("stock/earnings", symbol=t), t), notes)
     result = FetchResult(rows, notes=notes)
     result.add_table("earnings_events", calendar)

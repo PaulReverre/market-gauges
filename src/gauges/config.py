@@ -207,6 +207,17 @@ class Event(Strict):
         return STATUS_WEIGHT[self.status]
 
 
+class CalendarEvent(Strict):
+    date: date
+    event: str
+    kind: Literal["fomc", "macro", "other"]
+    source_url: HttpUrl
+
+
+def load_calendar(path: Path = CONFIG_DIR / "calendar.yaml") -> list[CalendarEvent]:
+    return [CalendarEvent.model_validate(e) for e in (_read_yaml(path) or [])]
+
+
 def _read_yaml(path: Path):
     with path.open(encoding="utf-8") as f:
         return yaml.safe_load(f)

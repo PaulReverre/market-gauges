@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup probe ingest score refresh backtest test
+.PHONY: setup probe ingest score render refresh backtest serve test
 
 setup:
 	python3.11 -m venv .venv
@@ -15,7 +15,14 @@ ingest:
 score:
 	$(PY) -m gauges.score
 
-refresh: ingest score
+render:
+	$(PY) -m gauges.render
+
+refresh: ingest score render
+
+serve:
+	@echo "Dashboard at http://127.0.0.1:8765/dashboard/"
+	$(PY) -m http.server 8765 --bind 127.0.0.1
 
 backtest:
 	$(PY) -m gauges.backtest --apply

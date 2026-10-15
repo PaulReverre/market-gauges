@@ -1,0 +1,19 @@
+# Fixed macro dates for the catalyst strip. Copied from the linked pages
+# (retrieved 2026-10-15), never from memory. FOMC entries are decision days
+# (the second day of each meeting; * on the Fed page = Summary of Economic
+# Projections). BLS schedules (CPI, payrolls) block automated access; add them
+# by hand from bls.gov with their source_url.
+
+- {date: 2026-10-28, event: FOMC decision, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2026-12-09, event: FOMC decision + projections, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-01-27, event: FOMC decision, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-03-17, event: FOMC decision + projections, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-04-28, event: FOMC decision, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-06-09, event: FOMC decision + projections, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-07-28, event: FOMC decision, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-09-15, event: FOMC decision + projections, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-10-27, event: FOMC decision, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2027-12-08, event: FOMC decision + projections, kind: fomc, source_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"}
+- {date: 2026-10-29, event: "GDP Q3 2026 (advance) and PCE, September", kind: macro, source_url: "https://www.bea.gov/news/schedule"}
+- {date: 2026-11-25, event: "GDP Q3 2026 (second) and PCE, October", kind: macro, source_url: "https://www.bea.gov/news/schedule"}
+- {date: 2026-12-23, event: "GDP Q3 2026 (third) and PCE, November", kind: macro, source_url: "https://www.bea.gov/news/schedule"}
