@@ -16,7 +16,8 @@ CONFIG_DIR = ROOT / "config"
 Freq = Literal["1d", "1w", "2w", "1mo", "3mo"]
 Status = Literal["primary", "guidance", "secondhand", "estimate"]
 STATUS_WEIGHT: dict[str, float] = {"primary": 1.0, "guidance": 0.8, "secondhand": 0.6, "estimate": 0.3}
-CATEGORICAL_VALUES = {"raise", "hold", "cut"}
+# raise/hold/cut: capex guidance; positive..strong_negative: impairments, financing events.
+CATEGORICAL_VALUES = {"raise", "hold", "cut", "positive", "neutral", "negative", "strong_negative"}
 
 
 class Strict(BaseModel):
