@@ -1,0 +1,24 @@
+# AI basket (BUILD_PROMPT.md Section 6.4). Equal weight within a layer; layer
+# weights sum to 100. Adding a listing (e.g. Anthropic, OpenAI) is a config
+# change: add the ticker here and note it in the commit message.
+layers:
+  compute_networking:
+    weight: 25
+    tickers: [NVDA, AMD, AVGO, MRVL, ANET, ARM]
+  foundry_equipment:
+    weight: 15
+    tickers: [TSM, ASML, LRCX, AMAT]
+  memory:
+    weight: 15
+    tickers: [MU, 000660.KS, 005930.KS]   # SK Hynix, Samsung: KRW, local-currency momentum
+  hyperscalers:
+    weight: 25
+    tickers: [MSFT, GOOGL, AMZN, META, ORCL]
+  neocloud_infra:
+    weight: 10
+    tickers: [CRWV, NBIS, VRT]
+  power:
+    weight: 10
+    tickers: [GEV, CEG, VST, BE]
+
+reference_etfs: [SMH, SOXX, IGV]

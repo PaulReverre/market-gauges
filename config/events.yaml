@@ -1,0 +1,16 @@
+# Manual and event-driven KPIs (BUILD_PROMPT.md Sections 3.7 and 6.8).
+# Every entry needs source_url, as_of and status; schema validation rejects
+# anything else. Status weight multipliers: primary 1.0, guidance 0.8,
+# secondhand 0.6, estimate 0.3. Values are never typed from memory.
+
+- id: anthropic_rev_2026q3
+  kpi: mo_labs
+  entity: Anthropic
+  metric: quarterly_revenue_usd_bn
+  value: 16.8
+  period: 2026Q3
+  as_of: 2026-10-14
+  basis: gross
+  status: secondhand
+  source_url: https://www.investing.com/news/stock-market-news/anthropics-q3-revenue-surges-45-to-nearly-17-billion-4950208
+  note: Reuters reading of a non-public prospectus. Replace with the S-1 figure when filed.

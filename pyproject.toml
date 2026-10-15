@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "market-gauges"
+version = "0.1.0"
+description = "Equity and AI sentiment / state gauges"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.1",
+    "httpx>=0.28",
+    "openpyxl>=3.1",
+    "pandas>=2.2",
+    "pydantic>=2.7",
+    "pypdf>=5.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "tenacity>=9.0",
+    "xlrd>=2.0",
+    "yfinance>=1.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
