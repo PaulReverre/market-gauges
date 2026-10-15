@@ -7,7 +7,7 @@ on:
   schedule:
     - cron: "0 2 * * 2-6"    # daily: Tue-Sat 02:00 UTC = 7pm PDT / 6pm PST, Mon-Fri sessions
     - cron: "0 14 * * 6"     # weekly: Saturday (CFTC, NAAIM, AAII, FactSet, Census BTOS)
-    - cron: "0 14 12 * *"    # monthly: the 12th (FINRA, TSMC, MOPS, Shiller, Uvik, EIA)
+    - cron: "0 14 12 * *"    # monthly: the 12th (FINRA, MOPS, Shiller, Uvik, EIA; tsmc is in ci_skip)
   workflow_dispatch:
     inputs:
       cadence:

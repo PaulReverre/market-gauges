@@ -1,7 +1,7 @@
 """Pull every source, validate, and append to the raw store.
 
 Usage: python -m gauges.ingest [--cadence daily|weekly|monthly|all] [--only fred,cboe] [--skip yfinance]
-                               [--full] [--db PATH]
+                               [--full] [--dry-run] [--db PATH]
 
 Fetches run in parallel threads; all writes happen on the main thread. Each
 source's outcome is recorded in fetch_log, and every rejected row, out-of-bounds
@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from gauges.archive import export_run
-from gauges.config import ROOT, load_baskets, load_events, load_series_config
+from gauges.config import ROOT, SeriesConfig, load_baskets, load_events, load_series_config
 from gauges.http import MissingKey, redact
 from gauges.schema import coerce
 from gauges.sources import SOURCES
@@ -73,23 +73,34 @@ def write(store: Store, ctx: Context, name: str, result: FetchResult, run_id: st
     return out
 
 
+def scheduled(cfg: SeriesConfig, cadence: str | None) -> list[str]:
+    """Sources for a run: all of them without --cadence (local runs); with it, the
+    scheduled group from config/series.yaml minus its ci_skip list."""
+    names = list(SOURCES)
+    if cadence is None:
+        return names
+    if cadence != "all":
+        grouped = {s for group in cfg.cadence.values() for s in group}
+        names = ([n for n in names if n not in grouped] if cadence == "daily"
+                 else [n for n in names if n in cfg.cadence.get(cadence, [])])
+    return [n for n in names if n not in cfg.ci_skip]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--cadence", choices=["daily", "weekly", "monthly", "all"], default="all",
-                        help="scheduled group from config/series.yaml (default: all sources)")
+    parser.add_argument("--cadence", choices=["daily", "weekly", "monthly", "all"],
+                        help="scheduled group from config/series.yaml, less its ci_skip list "
+                             "(default: every source)")
     parser.add_argument("--only", help="comma-separated sources: " + ",".join(SOURCES))
     parser.add_argument("--skip", help="comma-separated sources to leave out")
     parser.add_argument("--full", action="store_true", help="ignore stored state and re-pull full history")
+    parser.add_argument("--dry-run", action="store_true", help="print the sources this run would pull and exit")
     parser.add_argument("--db", default=str(DEFAULT_DB))
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
     cfg = load_series_config()
-    names = list(SOURCES)
-    if args.cadence != "all":
-        grouped = {s for group in cfg.cadence.values() for s in group}
-        names = ([n for n in names if n not in grouped] if args.cadence == "daily"
-                 else [n for n in names if n in cfg.cadence.get(args.cadence, [])])
+    names = scheduled(cfg, args.cadence)
     for flag, keep in ((args.only, True), (args.skip, False)):
         if flag:
             chosen = {s.strip() for s in flag.split(",")}
@@ -97,6 +108,9 @@ def main() -> None:
             if unknown:
                 parser.error(f"unknown sources: {', '.join(sorted(unknown))}")
             names = [n for n in names if (n in chosen) == keep]
+    if args.dry_run:
+        print(f"{len(names)} sources: {', '.join(names)}")
+        return
 
     fetched_at = datetime.now(timezone.utc).replace(tzinfo=None)
     run_id = fetched_at.strftime("%Y%m%dT%H%M%SZ")

@@ -66,6 +66,10 @@ fetch:
 cadence:
   weekly: [cftc, naaim, aaii, factset, btos]
   monthly: [finra, tsmc, mops, shiller, uvik, eia]
+# Left out of every --cadence run (the scheduled job), kept for local runs.
+# tsmc: the IR page answers CI runners with a Cloudflare challenge (403); MOPS
+# carries the same revenue and feeds sc_tsmc.
+ci_skip: [tsmc]
 
 # First match wins (fnmatch on "source:series"). freq: 1d, 1w, 2w, 1mo, 3mo.
 # lag_days (days after obs_date) applies only when a row has no vintage. Monthly

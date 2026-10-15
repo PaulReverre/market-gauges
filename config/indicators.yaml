@@ -882,7 +882,9 @@ indicators:
     gauge: G4
     pillar: supply_chain
     name: TSMC monthly revenue, 3-month average, year over year
-    inputs: [{ref: "tsmc:revenue_ntd_m", op: avg_pct_change, args: {window: 3, periods: 12}}]
+    # TWSE MOPS filing, not TSMC IR: the IR page sits behind a Cloudflare challenge
+    # that blocks CI runners. The two match exactly (TSMC revenue cross-check).
+    inputs: [{ref: "mops:2330.revenue_ntd_k", op: avg_pct_change, args: {window: 3, periods: 12}}]
     direction: higher_is_healthy
     weight: 5
     expected_freq: 1mo

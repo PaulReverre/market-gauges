@@ -22,6 +22,13 @@ make refresh               # ingest -> score -> render (a few minutes; full back
 make serve                 # dashboard at http://127.0.0.1:8765/dashboard/
 ```
 
+Start each later session with `make sync`. The scheduled job commits new
+`data/archive` files several times a week; `make sync` pulls them
+(`git pull --ff-only`) and rebuilds the local store from the archive
+(`restore --force`), so local scores and the bot's start from the same rows.
+Without it, a local `make ingest` builds on a stale store and re-pulls rows the
+bot already archived.
+
 Keys (`.env`, free tiers): `FRED_API_KEY`, `FINNHUB_API_KEY`, `OPENROUTER_API_KEY`,
 `EIA_API_KEY`, and `SEC_USER_AGENT` (a name and contact email, per SEC fair-access
 policy). `MASSIVE_API_KEY` and `FMP_API_KEY` are optional. A missing key makes
@@ -37,7 +44,8 @@ that source report `missing_key`; everything else still runs.
 | `render` | Write `data/latest.json` and `data/history.json` |
 | `refresh` | `ingest` + `score` + `render` |
 | `backtest` | Phase 3 validation; applies demotions to `config/indicators.yaml`, writes `reports/validation.md` |
-| `restore` | Rebuild the store from `data/archive` |
+| `restore` | Rebuild the store from `data/archive` (refuses if the store already has rows) |
+| `sync` | `git pull --ff-only`, then rebuild the store from `data/archive` (replacing its contents) |
 | `serve` | Static server for the dashboard |
 | `test` | pytest (no network) |
 
@@ -63,9 +71,16 @@ in git and a fresh machine or CI runner rebuilds the store with `make restore`.
 
 `.github/workflows/refresh.yml` runs on the spec's schedule: daily at 02:00 UTC
 Tue–Sat (after Mon–Fri closes), weekly on Saturday (CFTC, NAAIM, AAII, FactSet,
-Census BTOS), and monthly on the 12th (FINRA, TSMC, MOPS, Shiller, Uvik, EIA).
+Census BTOS), and monthly on the 12th (FINRA, MOPS, Shiller, Uvik, EIA).
 It restores the store, ingests that group, scores, renders, and commits
 `data/` back. Run it by hand from the Actions tab (`workflow_dispatch`).
+
+Sources in `ci_skip` (`config/series.yaml`) are left out of every `--cadence`
+run, scheduled or by hand. `tsmc` is there: TSMC's IR page answers GitHub's
+runners with a Cloudflare challenge (HTTP 403). The `sc_tsmc` indicator reads
+the same revenue from TWSE MOPS, and local runs (`make ingest`, no `--cadence`)
+still pull `tsmc` for the TSMC-vs-MOPS cross-check. Check what a run would pull
+with `python -m gauges.ingest --cadence monthly --dry-run`.
 
 Add the keys as repository secrets (Settings → Secrets and variables → Actions),
 or from a terminal with the GitHub CLI, one per key:

@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup probe ingest score render refresh backtest restore serve test
+.PHONY: setup probe ingest score render refresh backtest restore sync serve test
 
 setup:
 	python3.11 -m venv .venv
@@ -26,6 +26,11 @@ serve:
 
 restore:
 	$(PY) -m gauges.archive restore
+
+# Pull the bot's data commits, then rebuild the local store from the archive.
+sync:
+	git pull --ff-only
+	$(PY) -m gauges.archive restore --force
 
 backtest:
 	$(PY) -m gauges.backtest --apply
