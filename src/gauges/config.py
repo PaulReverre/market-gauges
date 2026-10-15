@@ -62,6 +62,11 @@ class YFinanceFetch(Strict):
 class EdgarFetch(Strict):
     tickers: list[str]
     tags: list[str]
+    basket: bool = False
+
+
+class ReleasesFetch(Strict):
+    start: date
 
 
 class FinnhubFetch(Strict):
@@ -113,6 +118,7 @@ class FetchConfig(Strict):
     cboe: CboeFetch
     yfinance: YFinanceFetch
     edgar: EdgarFetch
+    releases: ReleasesFetch
     finnhub: FinnhubFetch
     openrouter: OpenRouterFetch
     cftc: CftcFetch

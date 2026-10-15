@@ -73,7 +73,10 @@ def fetch(ctx: Context) -> FetchResult:
     ciks = cik_map(ctx)
     us_basket = [t for t in ctx.baskets.tickers if "." not in t]
     failures = 0
-    for ticker in cfg.tickers:
+    fact_tickers = list(dict.fromkeys(cfg.tickers + (us_basket if cfg.basket else [])))
+    for ticker in fact_tickers:
+        if ticker not in ciks:
+            continue
         try:
             facts = parse_companyfacts(sec_json(FACTS.format(cik=ciks[ticker])), ticker, cfg.tags)
             result.add_table("xbrl_facts", facts)
@@ -90,7 +93,7 @@ def fetch(ctx: Context) -> FetchResult:
             result.add_table("earnings_events", parse_8k_earnings(sec_json(SUBMISSIONS.format(cik=ciks[ticker])), ticker))
         except SourceError as e:
             notes.append(f"{ticker} submissions: {e}")
-    if failures == len(cfg.tickers):
+    if failures == len(fact_tickers):
         raise SourceError("companyfacts failed for every ticker")
     n_events = len(result.tables.get("earnings_events", []))
     notes.append(f"{len(result.tables.get('xbrl_facts', []))} XBRL facts; {n_events} 8-K 2.02 filings")

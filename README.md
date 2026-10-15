@@ -12,6 +12,35 @@ Every number on the dashboard comes from a fetched source or from a
 `config/events.yaml` entry with a source URL. Scores are point in time: each day
 uses only data public by then (revised macro series via ALFRED vintages).
 
+Below the gauges, two display panels:
+
+- **S&P 500 valuation vs history**: forward P/E (FactSet weekly, from 2017, with
+  FactSet's own 5- and 10-year averages), Shiller CAPE, trailing P/E, dividend
+  yield, the equity risk premium and corporate equities / GDP, each with its
+  5/10/20-year and full-history mean, standard deviation, z-score and
+  percentile. These are shown, not scored: the Phase 3 backtest found no
+  reliable sign for them against later returns.
+- **AI companies**: per basket company, recent returns (1W/1M/3M/YTD, from the
+  52-week high), the latest SEC earnings release (date, leader tone, AI
+  mentions, revenue guidance and its change vs the prior guide), EPS surprise,
+  revenue TTM growth from XBRL, and the next report date.
+
+### Leader commentary and earnings releases
+
+`sources/releases.py` reads each basket company's 8-K Item 2.02 earnings
+release (exhibit 99.1) from SEC EDGAR, back to 2015. It scores executives'
+quoted remarks and the release narrative with the Loughran-McDonald financial
+sentiment word lists, counts AI mentions, and parses revenue guidance. No
+language model produces any number. Remarks outside earnings releases
+(interviews, keynotes, letters) go through the skill's `log-commentary`, as
+sourced `events.yaml` entries you approve.
+
+**License note.** The Loughran-McDonald Master Dictionary (Notre Dame SRAF) is
+free for academic research; commercial use needs a license from its authors.
+The pipeline downloads it at run time into `data/cache/` (git-ignored, cached in
+CI) and never redistributes it. Get a license, or swap the word lists, before
+any commercial use.
+
 ## Quick start
 
 ```bash
@@ -108,9 +137,9 @@ Either way `data/latest.json` sits at a stable URL (e.g.
 ## Claude Code skill
 
 `.claude/skills/market-gauges/SKILL.md` adds `refresh`, `explain` (≤200 words,
-numbers only from `python -m gauges.digest`), `log-event <kpi>` and
-`post-earnings <ticker>` (propose sourced `events.yaml` entries, write only
-after approval), and `validate`.
+numbers only from `python -m gauges.digest`), `log-event <kpi>`,
+`log-commentary <leader>` and `post-earnings <ticker>` (propose sourced
+`events.yaml` entries, write only after approval), and `validate`.
 
 ## Acceptance checks (Section 13)
 
@@ -129,6 +158,12 @@ Shown on the dashboard rather than papered over: no free single-name CDS or AI
 bond spreads (equity proxies + manual events); no free historical option IV
 (snapshots accumulate from the first post-close run); ICE BofA spreads only
 from 2023-10-16 (ALFRED holds no older vintages); S&P DJI EPS file blocked
-(FactSet weekly PDF instead, from 2025); AAII full history is paywalled; NAAIM's
+(FactSet weekly PDF instead, from January 2017, the start of its PDF archive);
+AAII full history is paywalled; NAAIM's
 weekly file stopped updating on 2026-08-19; SemiAnalysis H100 index has no
 feed; GDELT rate-limits heavily; AI fundamentals move in steps around earnings.
+G2 runs below 70% coverage since the October 2026 backtest demoted FactSet
+growth, beats, forward P/E and the ERP. What remains of its earnings and
+valuation pillars is mostly indicators with no free source (forward revenue,
+margins) or too little history (top-10 concentration). The needle shows "low
+coverage" until those fill in.

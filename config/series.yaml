@@ -33,7 +33,10 @@ fetch:
            FinanceLeasePrincipalPayments, NetCashProvidedByUsedInOperatingActivities,
            RevenueRemainingPerformanceObligation, DepreciationDepletionAndAmortization,
            DepreciationAndAmortization, Depreciation, Revenues,
-           RevenueFromContractWithCustomerExcludingAssessedTax]
+           RevenueFromContractWithCustomerExcludingAssessedTax, SalesRevenueNet]
+    basket: true          # also pull revenue facts for every US-listed AI basket company
+  releases:
+    start: 2015-01-01     # 8-K Item 2.02 earnings releases: leader tone, AI mentions, guidance
   finnhub:
     calendar_days_ahead: 60
   openrouter:
@@ -44,7 +47,7 @@ fetch:
              lev_money_positions_long, lev_money_positions_short,
              dealer_positions_long_all, dealer_positions_short_all]
   factset:
-    backfill_since: 2025-01-01
+    backfill_since: 2017-01-01   # the PDF archive under this URL pattern starts in January 2017
   tsmc:
     start_year: 2015
   mops:
@@ -64,7 +67,7 @@ fetch:
 # listed here; Saturday's job pulls the weekly ones, the 12th of each month the
 # monthly ones (after TSMC/MOPS publish around the 10th). Local runs pull all.
 cadence:
-  weekly: [cftc, naaim, aaii, factset, btos]
+  weekly: [cftc, naaim, aaii, factset, btos, edgar]   # XBRL facts change only with 10-Q/10-K filings
   monthly: [finra, tsmc, mops, shiller, uvik, eia]
 # Left out of every --cadence run (the scheduled job), kept for local runs.
 # tsmc: the IR page answers CI runners with a Cloudflare challenge (403); MOPS
@@ -134,11 +137,18 @@ specs:
   - {match: "yfinance:*.nav",      freq: 1d,  bounds: [0.0001, 10000000]}
   - {match: "yfinance:*.opt_*_volume", freq: 1d, bounds: [0, 1000000000]}
   - {match: "finra:*",             freq: 1mo, lag_days: 52, bounds: [0, 100000000]}
+  - {match: "releases:*.quote_positivity", freq: 3mo, lag_days: 1, bounds: [-100, 100]}
+  - {match: "releases:*.release_tone", freq: 3mo, lag_days: 1, bounds: [-200, 200]}
+  - {match: "releases:*.ai_mentions",  freq: 3mo, lag_days: 1, bounds: [0, 300]}
+  - {match: "releases:*.rev_guide",    freq: 3mo, lag_days: 1, bounds: [1, 10000000]}
+  - {match: "releases:*.quote_words",  freq: 3mo, lag_days: 1, bounds: [0, 100000]}
   - {match: "finnhub:*",           freq: 3mo, bounds: [-1000, 1000]}
   - {match: "factset:fwd_pe",      freq: 1w,  bounds: [5, 60]}
   - {match: "factset:q_growth_est", freq: 1w, bounds: [-80, 200]}
   - {match: "factset:eps_beat_pct", freq: 1w, bounds: [0, 100]}
   - {match: "factset:*_guidance",  freq: 1w,  bounds: [0, 500]}
+  - {match: "factset:fwd_pe_*_avg", freq: 1w, bounds: [5, 60]}
+  - {match: "factset:cy_growth_*", freq: 1w,  bounds: [-80, 200]}
   - {match: "shiller:cape",        freq: 1mo, lag_days: 31, bounds: [3, 60]}
   - {match: "shiller:*",           freq: 1mo, lag_days: 31, bounds: [-1000, 100000000]}
   - {match: "tsmc:*",              freq: 1mo, lag_days: 41, bounds: [10000, 5000000]}

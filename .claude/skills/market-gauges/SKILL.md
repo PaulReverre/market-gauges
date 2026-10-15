@@ -58,6 +58,28 @@ Ground rules (these override any urge to be helpful with numbers):
    `python -m gauges.validate events` (fix and re-propose if rejected), then
    `make score render`, and report what moved using `python -m gauges.digest`.
 
+## log-commentary `<leader or company>`
+
+For notable remarks by AI leaders outside earnings releases (interviews,
+keynotes, posts, letters): e.g. Jensen Huang, Lisa Su, Satya Nadella, Sundar
+Pichai, Andy Jassy, Mark Zuckerberg, Larry Ellison, Sam Altman, Dario Amodei.
+(Quoted remarks in SEC earnings releases are already scored automatically.)
+
+1. Find the primary source (the video, transcript, post or filing) and the
+   exact wording. Secondhand coverage only if no primary record exists.
+2. Classify the tone toward AI demand, spending or pricing as one of
+   positive, neutral, negative, strong_negative, and quote the sentence that
+   justifies it. Be conservative: hedged or mixed remarks are neutral.
+3. Propose one `events.yaml` entry: `kpi: leader_commentary`, `entity` (the
+   person), `metric` (short topic, e.g. capex_outlook), `value` (the tone),
+   `period` (the date), `as_of`, `status` (primary if from the source itself),
+   `source_url`, and a `note` with the quoted sentence.
+4. Stop and wait for explicit approval; then append, run
+   `python -m gauges.validate events`, `make score render`, and report.
+
+Given the bias note above, apply the same bar to Anthropic's own leaders as to
+everyone else, and flag that you are an Anthropic model when logging them.
+
 ## post-earnings `<ticker>`
 
 For MSFT, GOOGL, META, AMZN, ORCL or NVDA after a print, read the earnings

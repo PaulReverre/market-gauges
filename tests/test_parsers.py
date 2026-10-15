@@ -108,7 +108,7 @@ def test_factset_text_tolerates_pdf_spacing_artifacts():
             "guidance and 72 S&P 500 companies have issued positive EPS guidance. • Valuation: The forward 12 -month "
             "P/E ratio for the S&P 500 is 19.1. This P/E ratio is below the 5-year average (19.8). Of these companies, "
             "84% have reported actual EPS above the mean EPS estimate.")
-    assert factset.parse_text(text) == {"fwd_pe": 19.1, "q_growth_est": 29.6, "eps_beat_pct": 84.0,
+    assert factset.parse_text(text, date(2026, 10, 9)) == {"fwd_pe": 19.1, "q_growth_est": 29.6, "eps_beat_pct": 84.0,
                                         "neg_guidance": 44.0, "pos_guidance": 72.0}
 
 
@@ -225,3 +225,42 @@ def test_alfred_diff_keeps_only_new_or_changed_values():
     rows = alfred.diff_vintages("PCEPILFE", previous, current, date(2026, 10, 30))
     assert [(o.obs_date, o.value) for o in rows] == [(date(2026, 8, 1), 130.455), (date(2026, 9, 1), 130.9)]
     assert all(o.vintage == date(2026, 10, 30) for o in rows)
+
+
+# ------------------------------------------------------------- added 2026-10-15
+def test_factset_averages_guidance_and_calendar_growth():
+    text = ("This P/E ratio is below the 5 -year average (19.8) but equal to the 10-year average (1 9.1). "
+            "Of these 116 compa nies, 44 have issued negative EPS guidance and 72 have issued posi tive EPS guidance. "
+            "For Q3 2020, the blended earnings decline for the S&P 500 is -18.4%. "
+            "For CY 2020, analysts are projecting an earnings decline of -17.1%. "
+            "For CY 2021, analysts are projecting earnings growth of 24.6% and revenue growth of 8.0%.")
+    out = factset.parse_text(text, date(2020, 10, 16))
+    assert out["fwd_pe_5y_avg"] == 19.8 and out["fwd_pe_10y_avg"] == 19.1
+    assert (out["neg_guidance"], out["pos_guidance"]) == (44.0, 72.0)
+    assert out["q_growth_est"] == -18.4
+    assert (out["cy_growth_cur"], out["cy_growth_next"]) == (-17.1, 24.6)
+
+
+def test_release_quotes_tone_and_guidance():
+    from gauges.sources import releases
+    lexicon = (frozenset({"RECORD", "STRONG", "EXCELLENT"}), frozenset({"LOSS", "DECLINE"}))
+    html = ('<p>&#8220;We delivered an excellent quarter with record revenue and strong demand across AI data '
+            'centers,&#8221; said Dr. Lisa Su, chair and CEO.</p><p>Revenue is expected to be $108.0 billion, plus '
+            'or minus 2%.</p>' + "<p>Filler words about the business and operations. </p>" * 60 +
+            "<p>Forward-Looking Statements: risks include loss and decline and loss.</p>")
+    text = releases.clean_text(html)
+    assert releases.executive_quotes(text)[0][0].startswith("Dr. Lisa Su")
+    out = releases.analyse(text, lexicon)
+    assert out["quote_positivity"] == pytest.approx(3 / out["quote_words"] * 100)
+    assert out["rev_guide"] == 108000.0
+    assert out["release_tone"] > 0          # boilerplate negatives are cut off
+    assert releases.revenue_guidance("expects revenue to be approximately $13 billion, plus or minus $300 million") == 13000.0
+    assert releases.revenue_guidance("revenue in the range of $1.2 billion to $1.4 billion") == 1300.0
+    assert releases.revenue_guidance("no numbers here") is None
+
+
+def test_lexicon_parse_rejects_truncated_lists():
+    from gauges.sources import releases
+    header = "Word,Negative,Positive\n"
+    with pytest.raises(Exception, match="truncated"):
+        releases.parse_lexicon(header + "GOOD,0,2009\nBAD,2009,0\n")

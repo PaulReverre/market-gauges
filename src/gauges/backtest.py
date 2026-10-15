@@ -471,8 +471,9 @@ def render(reg: Registry, results, members, before, after, changes, frag_before,
            "windows. Constituent breadth (net highs/lows, McClellan, % above 200d) uses today's S&P 500 members and "
            "carries survivorship bias. The AI basket is today's selection applied backwards, so AI trend and breadth "
            "inputs carry hindsight bias; G3/G4 are scored against SMH. ICE BofA spreads only exist from 2023-10-16 "
-           "and several AI and earnings series start in 2023-2025, so those indicators sit below the "
-           f"{MIN_YEARS}-year threshold and are kept with a low-confidence label rather than judged.", "",
+           "and several AI series start in 2023-2025, so those sit below the "
+           f"{MIN_YEARS}-year threshold and are kept with a low-confidence label rather than judged. FactSet earnings "
+           "and valuation series start in 2017 (the start of its PDF archive), so they are judged on about nine years.", "",
            "## Verdicts", ""]
     for name, low in (("G1", False), ("G2", False), ("G3", True), ("G4", True)):
         text = verdict_paragraph(name, final[name], low)

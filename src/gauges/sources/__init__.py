@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from gauges.sources import (aaii, alfred, cboe, census, cftc, edgar, eia, factset, finnhub, finra, fred, gdelt,
-                            gpu_index, mops, naaim, openrouter, shiller, ssga, treasury, tsmc, wikimedia, yf)
+                            gpu_index, mops, naaim, openrouter, releases, shiller, ssga, treasury, tsmc, wikimedia, yf)
 from gauges.sources.base import Context, FetchResult
 
 SOURCES: dict[str, Callable[[Context], FetchResult]] = {
@@ -14,6 +14,7 @@ SOURCES: dict[str, Callable[[Context], FetchResult]] = {
     "ssga": ssga.fetch,
     "yfinance": yf.fetch,
     "edgar": edgar.fetch,
+    "releases": releases.fetch,
     "finnhub": finnhub.fetch,
     "openrouter": openrouter.fetch,
     "cftc": cftc.fetch,

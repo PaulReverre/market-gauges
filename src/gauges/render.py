@@ -19,7 +19,8 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from gauges.config import ROOT, load_calendar, load_events
+from gauges.config import ROOT, load_baskets, load_calendar, load_events, load_series_config
+from gauges.features import Features
 from gauges.registry import Indicator, Registry, load_registry
 from gauges.store import DEFAULT_DB, Store
 from gauges.validate import CROSSCHECKS
@@ -181,6 +182,7 @@ def build(store: Store) -> tuple[dict, dict]:
     overlay["date"] = pd.to_datetime(overlay["date"])
     as_of = pd.Timestamp(summary["as_of"])
     now = datetime.now(timezone.utc)
+    features = Features(store, load_series_config(), load_baskets(), events)
 
     # Sources: the latest run each source appeared in.
     log = con.execute(
@@ -298,6 +300,8 @@ def build(store: Store) -> tuple[dict, dict]:
         "movers": movers[:8],
         "gaps": summary["gaps"],
         "methodology": methodology(reg),
+        "valuation": valuation_panel(features),
+        "ai_companies": ai_companies(features),
         "attribution": [
             "Source: OpenRouter (openrouter.ai/rankings), as of " + (sources_latest(sources, "openrouter") or "n/a")
             + ". Licensed under CC BY 4.0.",
@@ -309,6 +313,108 @@ def build(store: Store) -> tuple[dict, dict]:
     }
     history = build_history(store, gauges, overlay)
     return latest, history
+
+
+VALUATION_WINDOWS = (5, 10, 20)
+
+
+def stretch(s: pd.Series, label: str, unit: str, source: str, url: str, expensive_when: str = "high",
+            extra: dict | None = None) -> dict | None:
+    """Current value vs its 5/10/20-year and full-history averages: mean, z-score (SDs) and percentile."""
+    s = s.dropna().sort_index()
+    if len(s) < 10:
+        return None
+    last_date, value = s.index[-1], float(s.iloc[-1])
+    out = {"label": label, "unit": unit, "value": round(value, 2), "as_of": last_date.date().isoformat(),
+           "since": s.index[0].date().isoformat(), "source": source, "source_url": url,
+           "expensive_when": expensive_when, "windows": {}}
+    for years in (*VALUATION_WINDOWS, None):
+        w = s if years is None else s[s.index > last_date - pd.DateOffset(years=years)]
+        span = (w.index[-1] - w.index[0]).days / 365.25
+        if len(w) < 8 or (years is not None and span < years * 0.8) or w.std() == 0:
+            continue
+        out["windows"]["all" if years is None else f"{years}y"] = {
+            "mean": round(float(w.mean()), 2), "sd": round(float(w.std()), 2),
+            "z": round(float((value - w.mean()) / w.std()), 2),
+            "pct": round(float(((w < value).sum() + 0.5 * (w == value).sum()) / len(w) * 100), 1)}
+    out.update(extra or {})
+    return out
+
+
+def valuation_panel(F: Features) -> list[dict]:
+    """S&P 500 valuation vs history, in standard deviations (display only: the backtest keeps these out of G2)."""
+    factset = "https://insight.factset.com/topic/earnings"
+    pe = F.obs("factset", "fwd_pe")
+    fs_avgs = {"factset_5y_avg": _last(F.obs("factset", "fwd_pe_5y_avg")),
+               "factset_10y_avg": _last(F.obs("factset", "fwd_pe_10y_avg"))}
+    price, earnings, dividend = (F.obs("shiller", k) for k in ("price", "earnings", "dividend"))
+    real10 = F.obs("fred", "DFII10")
+    erp = (100 / pe - real10.reindex(pe.index.union(real10.index)).ffill().reindex(pe.index)).dropna()
+    eq = (F.obs("alfred", "NCBEILQ027S") / F.obs("alfred", "GDP") * 0.1).dropna()
+    top10 = F.panel_top10_weight()["value"].dropna()
+    top10 = top10[~top10.index.duplicated()]
+    rows = [
+        stretch(pe, "Forward P/E", "x", "FactSet Earnings Insight (weekly, from 2017)", factset, extra=fs_avgs),
+        stretch(F.obs("shiller", "cape"), "Shiller CAPE", "x", "Shiller (shillerdata.com), monthly from 1881",
+                "https://shillerdata.com/"),
+        stretch((price / earnings).dropna(), "Trailing P/E", "x", "Shiller price / 12-month earnings",
+                "https://shillerdata.com/"),
+        stretch((dividend / price * 100).dropna(), "Dividend yield", "%", "Shiller dividends / price",
+                "https://shillerdata.com/", expensive_when="low"),
+        stretch(erp, "Equity risk premium (forward earnings yield − 10y real)", "pts", "FactSet + FRED DFII10",
+                "https://fred.stlouisfed.org/series/DFII10", expensive_when="low"),
+        stretch(eq, "Corporate equities / GDP", "%", "FRED NCBEILQ027S / GDP (latest vintage)",
+                "https://fred.stlouisfed.org/series/NCBEILQ027S"),
+        stretch(top10, "Top-10 weight in the S&P 500", "%", "SSGA SPY holdings (daily, from first run)",
+                "https://www.ssga.com/us/en/intermediary/etfs/spdr-sp-500-etf-trust-spy"),
+    ]
+    return [r for r in rows if r]
+
+
+def _last(s: pd.Series):
+    s = s.dropna()
+    return None if s.empty else round(float(s.iloc[-1]), 2)
+
+
+def ai_companies(F: Features) -> list[dict]:
+    """Per AI-basket company: recent returns, latest earnings release, guidance, surprise and revenue growth."""
+    closes = F.basket()["closes"]
+    layer_of = {t: name for name, layer in F.baskets.layers.items() for t in layer.tickers}
+    events = {m: F.release_events(m) for m in ("quote_positivity", "release_tone", "ai_mentions", "rev_guide")}
+    guide_growth = F.guidance_growth_events()
+    surprises = F.surprise_events()
+    upcoming = F.con.execute(
+        "SELECT ticker, min(report_date) FROM earnings_events WHERE source = 'finnhub_calendar' AND report_date >= "
+        "current_date GROUP BY 1").fetchall()
+    next_report = {t: d.isoformat() for t, d in upcoming}
+    rows = []
+    for ticker in F.baskets.tickers:
+        px = closes[ticker].dropna() if ticker in closes else pd.Series(dtype=float)
+        if px.empty:
+            continue
+        last = px.index[-1]
+        ret = lambda n: round(float(px.iloc[-1] / px.iloc[-1 - n] - 1) * 100, 1) if len(px) > n else None  # noqa: E731
+        ytd_base = px[px.index < pd.Timestamp(last.year, 1, 1)]
+        row = {"ticker": ticker, "layer": layer_of.get(ticker), "as_of": last.date().isoformat(),
+               "ret_1w": ret(5), "ret_1m": ret(21), "ret_3m": ret(63),
+               "ret_ytd": round(float(px.iloc[-1] / ytd_base.iloc[-1] - 1) * 100, 1) if len(ytd_base) else None,
+               "drawdown": round(float(px.iloc[-1] / px.iloc[-252:].max() - 1) * 100, 1),
+               "next_report": next_report.get(ticker)}
+        for metric, ev in events.items():
+            mine = ev[ev["ticker"] == ticker] if not ev.empty else ev
+            if not mine.empty:
+                row[metric] = round(float(mine["value"].iloc[-1]), 1)
+                row["release_date"] = max(row.get("release_date", ""), (mine["date"].iloc[-1] - pd.Timedelta(days=1)).date().isoformat())
+        gg = guide_growth[guide_growth["ticker"] == ticker]
+        row["guide_growth"] = round(float(gg["value"].iloc[-1]), 1) if not gg.empty else None
+        sp = surprises[surprises["ticker"] == ticker].sort_values("date")
+        row["eps_surprise"] = round(float(sp["value"].iloc[-1]), 1) if not sp.empty else None
+        rev = F.company_revenue(ticker) if "." not in ticker else pd.DataFrame()
+        if len(rev) >= 8:
+            ttm = rev["value"].rolling(4).sum()
+            row["revenue_ttm_yoy"] = round(float(ttm.iloc[-1] / ttm.iloc[-5] - 1) * 100, 1) if ttm.iloc[-5] else None
+        rows.append(row)
+    return rows
 
 
 def sources_latest(sources: list[dict], name: str) -> str | None:

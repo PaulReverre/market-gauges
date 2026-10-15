@@ -122,6 +122,10 @@ tr.inactive td { color: var(--faint); }
 .scorebar { display: inline-block; width: 46px; height: 5px; background: var(--surface-2); border-radius: 3px; vertical-align: middle; margin-left: 6px; overflow: hidden; }
 .scorebar b { display: block; height: 100%; }
 svg.spark { display: block; }
+.zbar { position: relative; display: inline-block; width: 90px; height: 8px; background: var(--surface-2); border-radius: 4px; vertical-align: middle; }
+.zbar::after { content: ""; position: absolute; left: 50%; top: -2px; width: 1px; height: 12px; background: var(--faint); }
+.zbar b { position: absolute; top: 0; height: 100%; border-radius: 4px; }
+td.pos { color: var(--up); } td.neg { color: var(--down); }
 
 /* Lists */
 .catalysts { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -170,6 +174,7 @@ select { font: inherit; background: var(--surface); color: var(--text); border: 
       <aside class="card side" id="fragility"></aside>
     </div>
     <div id="comp-G1"></div><div id="comp-G2"></div>
+    <section class="card" id="valuation" style="margin-top:14px"></section>
     <h2 class="row-title">AI sector</h2>
     <div class="row">
       <article class="card gauge" id="card-G3"></article>
@@ -177,6 +182,7 @@ select { font: inherit; background: var(--surface); color: var(--text); border: 
       <aside class="card side" id="unwind"></aside>
     </div>
     <div id="comp-G3"></div><div id="comp-G4"></div>
+    <section class="card" id="aicos" style="margin-top:14px"></section>
     <h2 class="row-title">Watch list</h2>
     <section class="card" id="watchlist"></section>
     <h2 class="row-title">History</h2>
@@ -447,6 +453,46 @@ function renderUnwind(d) {
   document.getElementById("alerts").innerHTML = alerts.join("");
 }
 
+function zbar(z, expensiveHigh) {
+  if (z == null) return "";
+  const c = Math.max(-3, Math.min(3, z)), w = Math.abs(c) / 3 * 50;
+  const rich = expensiveHigh ? z > 0 : z < 0;
+  return `<span class="zbar" title="${signed(z)} standard deviations from the average"><b style="${c >= 0 ? "left:50%" : `left:${50 - w}%`};width:${w}%;background:${rich ? css("--down") : css("--up")}"></b></span>`;
+}
+
+function renderValuation(d) {
+  const win = (r, k) => r.windows[k] || {};
+  const rows = (d.valuation || []).map((r) => {
+    const hi = r.expensive_when === "high";
+    const fs = r.factset_10y_avg != null ? `<br><span class="note">FactSet's own averages: 5y ${fmt(r.factset_5y_avg)} · 10y ${fmt(r.factset_10y_avg)}</span>` : "";
+    return `<tr><td class="name">${esc(r.label)}${fs}<small>since ${r.since} · ${hi ? "higher" : "lower"} = more expensive</small></td>
+      <td class="r num" title="${esc(r.source)} · as of ${r.as_of}">${fmt(r.value)}${r.unit === "x" ? "x" : r.unit === "%" ? "%" : ""}</td>
+      ${["5y", "10y", "20y", "all"].map((k) => `<td class="r num" title="mean ${fmt(win(r, k).mean)}, SD ${fmt(win(r, k).sd)}">${win(r, k).mean == null ? "—" : fmt(win(r, k).mean)}</td>`).join("")}
+      <td class="r num">${win(r, "10y").z == null ? "—" : signed(win(r, "10y").z)}</td><td>${zbar(win(r, "10y").z, hi)}</td>
+      <td class="r num">${win(r, "20y").z == null ? (win(r, "all").z == null ? "—" : signed(win(r, "all").z) + "*") : signed(win(r, "20y").z)}</td>
+      <td class="r num">${(win(r, "20y").pct ?? win(r, "all").pct) == null ? "—" : fmt1(win(r, "20y").pct ?? win(r, "all").pct)}</td>
+      <td class="num">${r.as_of}</td><td><a href="${esc(r.source_url)}" target="_blank" rel="noopener" title="${esc(r.source)}">source</a></td></tr>`;
+  }).join("");
+  document.getElementById("valuation").innerHTML = `<div class="head"><h3>S&amp;P 500 valuation vs history</h3><span class="sub">z = standard deviations from the window average · display only</span></div>
+    <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Measure</th><th class="r">Now</th><th class="r">5y avg</th><th class="r">10y avg</th><th class="r">20y avg</th><th class="r">Full history</th><th class="r">z (10y)</th><th></th><th class="r">z (20y)</th><th class="r">Pctile (20y)</th><th>As of</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin:8px 2px 0">The Phase 3 backtest keeps CAPE and equities/GDP out of the G2 score (their sign against later returns was wrong), so this panel shows stretch without weighting it. * = full-history z where 20 years are not available.</p>`;
+}
+
+function renderAICos(d) {
+  const pct = (v) => v == null ? `<td class="r num">—</td>` : `<td class="r num ${v >= 0 ? "pos" : "neg"}">${signed(v)}%</td>`;
+  const rows = (d.ai_companies || []).map((c) => `<tr><td><b>${esc(c.ticker)}</b></td><td>${esc(c.layer || "")}</td>
+    ${pct(c.ret_1w)}${pct(c.ret_1m)}${pct(c.ret_3m)}${pct(c.ret_ytd)}${pct(c.drawdown)}
+    <td class="num">${c.release_date || "—"}</td>
+    <td class="r num" title="Executives' quoted remarks: net positive finance words per 100 words (Loughran-McDonald)">${c.quote_positivity == null ? "—" : fmt1(c.quote_positivity)}</td>
+    <td class="r num" title="AI mentions per 1,000 words of the release">${c.ai_mentions == null ? "—" : fmt1(c.ai_mentions)}</td>
+    <td class="r num" title="Next-quarter revenue guidance midpoint ($M)">${c.rev_guide == null ? "—" : "$" + fmt(c.rev_guide) + "M"}</td>
+    ${pct(c.guide_growth)}${pct(c.eps_surprise)}${pct(c.revenue_ttm_yoy)}
+    <td class="num">${c.next_report || "—"}</td></tr>`).join("");
+  document.getElementById("aicos").innerHTML = `<div class="head"><h3>AI companies: performance, earnings, guidance and leader tone</h3><span class="sub">returns in local currency · as of ${d.as_of}</span></div>
+    <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Ticker</th><th>Layer</th><th class="r">1W</th><th class="r">1M</th><th class="r">3M</th><th class="r">YTD</th><th class="r">From 52w high</th><th>Last release</th><th class="r">Leader tone</th><th class="r">AI mentions</th><th class="r">Revenue guide</th><th class="r">Guide vs prior</th><th class="r">EPS surprise</th><th class="r">Revenue TTM YoY</th><th>Next report</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin:8px 2px 0">Earnings releases: SEC 8-K exhibit 99.1. Leader tone is a word count (Loughran-McDonald lists), not model output. Guidance appears only where a company states a numeric revenue outlook. EPS surprises: Finnhub (last 4 quarters). Revenue: SEC XBRL.</p>`;
+}
+
 function renderWatchlist(d) {
   const rows = d.watchlist.map((w) => `<tr><td>${esc(w.kpi)}</td><td>${esc(w.entity)}</td><td>${esc(w.metric || "—")}${w.basis ? " (" + esc(w.basis) + ")" : ""}</td>
     <td class="r num" title="${esc(w.note || "")}">${esc(typeof w.value === "number" ? fmt(w.value) : w.value)}</td><td>${esc(w.period)}</td><td class="num">${w.as_of}</td>
@@ -542,7 +588,7 @@ function drawCharts() {
 
 function renderAll() {
   renderMeta(LATEST); renderGauges(LATEST); renderFragility(LATEST); renderUnwind(LATEST);
-  renderWatchlist(LATEST); renderCatalysts(LATEST); renderMethod(LATEST); renderFooter(LATEST);
+  renderWatchlist(LATEST); renderCatalysts(LATEST); renderValuation(LATEST); renderAICos(LATEST); renderMethod(LATEST); renderFooter(LATEST);
   drawCharts();
 }
 

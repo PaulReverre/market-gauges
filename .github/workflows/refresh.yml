@@ -54,6 +54,11 @@ jobs:
           esac
           echo "group=$group" >> "$GITHUB_OUTPUT"
           echo "Source group: $group"
+      - name: Cache downloaded reference files (Loughran-McDonald dictionary)
+        uses: actions/cache@v6
+        with:
+          path: data/cache
+          key: reference-files-v1
       - name: Restore store from data/archive
         run: python -m gauges.archive restore
       - name: Ingest

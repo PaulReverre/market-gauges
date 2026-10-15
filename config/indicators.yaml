@@ -465,8 +465,9 @@ indicators:
     weight: 6
     expected_freq: 1w
     lookback_pct: all
-    role: coincident
+    role: display
     notes: Stand-in for NTM EPS growth; current-quarter estimated/blended YoY growth.
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 1/5 regimes)"
   - id: ea_margin
     gauge: G2
     pillar: earnings
@@ -486,7 +487,8 @@ indicators:
     weight: 4
     expected_freq: 1w
     lookback_pct: all
-    role: coincident
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 2/5 regimes)"
   # ------------------------------------------------------------ valuation
   - id: va_fpe
     gauge: G2
@@ -498,8 +500,9 @@ indicators:
     expected_freq: 1w
     lookback_pct: 20y
     bounds: [5, 60]
-    role: context
+    role: display
     notes: FactSet history starts 2025-01 here, so the 20-year percentile is badged short-history.
+    validation: "Phase 3 backtest: demote context -> display (wrong sign in full sample)"
   - id: va_erp
     gauge: G2
     pillar: valuation
@@ -510,7 +513,8 @@ indicators:
     weight: 5
     expected_freq: 1w
     lookback_pct: 20y
-    role: context
+    role: display
+    validation: "Phase 3 backtest: demote context -> display (wrong sign in full sample)"
   - id: va_cape
     gauge: G2
     pillar: valuation
@@ -592,8 +596,9 @@ indicators:
     weight: 2
     expected_freq: 1w
     lookback_pct: 20y
-    role: coincident
+    role: display
     notes: Low weight; the link to equities is debated.
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 3/8 regimes)"
   - id: rl_sloos
     gauge: G2
     pillar: rates_liquidity
@@ -662,8 +667,8 @@ indicators:
     direction: higher_is_greed
     weight: 5
     expected_freq: 1d
-    role: leading
-    validation: "Phase 3 backtest: relabel coincident -> leading (wrong sign in full sample; fits leading (t=2.0))"
+    role: display
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 3/8 regimes)"
   - id: ai_rs
     gauge: G3
     pillar: trend_rs
@@ -1151,6 +1156,146 @@ indicators:
     expected_freq: 1mo
     lookback_pct: 20y
     role: display
+
+  # ======================================================================
+  # Added 2026-10-15: leader commentary, AI earnings and guidance, recent
+  # performance, S&P forward guidance and valuation vs history. Gated by the
+  # Phase 3 backtest like everything above.
+  # ---------------------------------------------------------- G3 AI sentiment
+  - id: ai_ret_3m
+    gauge: G3
+    pillar: trend_rs
+    name: AI basket return, last 3 months
+    kind: panel
+    panel: basket_return
+    targs: {periods: 63}
+    direction: higher_is_greed
+    weight: 3
+    expected_freq: 1d
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample)"
+  - id: ai_eps_surprise
+    gauge: G3
+    pillar: crowding
+    name: AI basket EPS surprise, mean of the last two seasons
+    kind: panel
+    panel: eps_surprise
+    targs: {days: 183, min_releases: 5}
+    direction: higher_is_greed
+    weight: 2
+    expected_freq: 3mo
+    lookback_pct: all
+    role: coincident
+    notes: Finnhub free tier returns 4 quarters, so history accumulates; report dates from EDGAR 8-K Item 2.02.
+  - id: ai_leader_tone
+    gauge: G3
+    pillar: attention
+    name: AI leaders' quoted remarks in earnings releases, net positive words per 100
+    kind: panel
+    panel: release_metric
+    targs: {metric: quote_positivity, days: 120, min_releases: 4}
+    direction: higher_is_greed
+    weight: 3
+    expected_freq: 3mo
+    lookback_pct: all
+    role: coincident
+    notes: CEO/CFO quotes in SEC 8-K exhibit 99.1, scored with the Loughran-McDonald word lists (no model output).
+  - id: ai_release_tone
+    gauge: G3
+    pillar: attention
+    name: AI earnings-release narrative tone (per 1,000 words, before boilerplate)
+    kind: panel
+    panel: release_metric
+    targs: {metric: release_tone, days: 120, min_releases: 4}
+    direction: higher_is_greed
+    weight: 2
+    expected_freq: 3mo
+    lookback_pct: all
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (sign holds in only 2/6 regimes)"
+  - id: ai_narrative
+    gauge: G3
+    pillar: attention
+    name: AI mentions per 1,000 words in AI companies' earnings releases
+    kind: panel
+    panel: release_metric
+    targs: {metric: ai_mentions, days: 120, min_releases: 4}
+    direction: higher_is_greed
+    weight: 2
+    expected_freq: 3mo
+    lookback_pct: all
+    role: display
+    validation: "Phase 3 backtest: demote contrarian -> display (wrong sign in full sample)"
+  - id: ai_leaders
+    gauge: G3
+    pillar: attention
+    name: Curated AI leader commentary (interviews, posts; you approve each entry)
+    kind: event
+    event: {kpi: leader_commentary, categories: {positive: 75, neutral: 50, negative: 25, strong_negative: 5}}
+    direction: higher_is_greed
+    weight: 2
+    expected_freq: 1mo
+    role: coincident
+    notes: Logged with the skill's log-commentary command; each entry needs a source URL and a tone you confirm.
+  # ---------------------------------------------------------- G4 AI health
+  - id: ai_guide_growth
+    gauge: G4
+    pillar: supply_chain
+    name: AI companies' guided next-quarter revenue vs their previous guide
+    kind: panel
+    panel: release_guidance_growth
+    targs: {days: 120, min_releases: 2}
+    direction: higher_is_healthy
+    weight: 4
+    expected_freq: 3mo
+    lookback_pct: all
+    role: display
+    notes: Only companies that state numeric revenue guidance in the release (e.g. NVDA, AMD).
+    validation: "Phase 3 backtest: demote leading -> display (sign holds in only 1/5 regimes)"
+  - id: ai_rev_growth
+    gauge: G4
+    pillar: monetization
+    name: AI basket revenue (US filers), TTM year over year
+    kind: panel
+    panel: xbrl_basket_revenue
+    direction: higher_is_healthy
+    weight: 4
+    expected_freq: 3mo
+    lookback_pct: all
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample and sign holds in only 1/7 regimes)"
+  # ---------------------------------------------------- G2 equity fundamentals
+  - id: ea_guidance
+    gauge: G2
+    pillar: earnings
+    name: Negative share of S&P 500 EPS guidance (FactSet)
+    inputs: ["factset:neg_guidance", "factset:pos_guidance"]
+    transform: share
+    direction: lower_is_healthy
+    weight: 4
+    expected_freq: 1w
+    role: leading
+  - id: ea_cy_growth
+    gauge: G2
+    pillar: earnings
+    name: S&P 500 current calendar-year EPS growth forecast (FactSet)
+    inputs: ["factset:cy_growth_cur"]
+    direction: higher_is_healthy
+    weight: 3
+    expected_freq: 1w
+    role: display
+    validation: "Phase 3 backtest: demote coincident -> display (wrong sign in full sample and sign holds in only 1/4 regimes)"
+  - id: va_fpe_premium
+    gauge: G2
+    pillar: valuation
+    name: Forward P/E vs its 10-year average, % premium (FactSet)
+    inputs: ["factset:fwd_pe", "factset:fwd_pe_10y_avg"]
+    transform: pct_diff
+    direction: lower_is_healthy
+    weight: 3
+    expected_freq: 1w
+    role: display
+    validation: "Phase 3 backtest: demote context -> display (wrong sign in full sample)"
 
 # Equity Fragility overlay (Section 6.2): members are the indicators above with
 # a `fragility` orientation, plus the breadth-divergence flag.

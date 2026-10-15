@@ -87,6 +87,18 @@ def c_mean(df: pd.DataFrame) -> pd.Series:
     return df.mean(axis=1, skipna=True)
 
 
+def c_share(df: pd.DataFrame) -> pd.Series:
+    """First input as a percent of the two inputs' sum (e.g. negative / (negative + positive) guidance)."""
+    a, b = _cols(df, 2)
+    return a / (a + b).replace(0, np.nan) * 100
+
+
+def c_pct_diff(df: pd.DataFrame) -> pd.Series:
+    """Percent premium of the first input over the second (e.g. P/E vs its 10-year average)."""
+    a, b = _cols(df, 2)
+    return (a / b.replace(0, np.nan) - 1) * 100
+
+
 def c_ratio_change(df: pd.DataFrame, periods: int) -> pd.Series:
     return pct_change(c_ratio(df), periods)
 
@@ -138,7 +150,7 @@ COMBINES: dict[str, Callable[..., pd.Series]] = {
     "identity": c_identity, "ratio": c_ratio, "diff": c_diff, "mean": c_mean, "ratio_change": c_ratio_change,
     "diff_max": c_diff_max, "diff_mean": c_diff_mean, "vrp": c_vrp, "return_spread": c_return_spread,
     "earnings_yield_gap": c_earnings_yield_gap, "net_liquidity_change": c_net_liquidity_change,
-    "sum_avg_pct_change": c_sum_avg_pct_change,
+    "sum_avg_pct_change": c_sum_avg_pct_change, "share": c_share, "pct_diff": c_pct_diff,
 }
 # These combine monthly inputs on their shared observation dates, not daily.
 OBS_TIME_COMBINES = {"sum_avg_pct_change"}
@@ -203,6 +215,20 @@ def basket_index(returns: pd.DataFrame, layers: dict[str, tuple[float, list[str]
     daily = (lr.fillna(0) * w).sum(axis=1) / (live * w).sum(axis=1).replace(0, np.nan)
     daily = daily.dropna()
     return (1 + daily).cumprod()
+
+
+def event_window_mean(events: pd.DataFrame, calendar: pd.DatetimeIndex, days: int, min_events: int) -> pd.Series:
+    """Mean of event values (columns date, value) over a trailing calendar-day window, on each calendar date.
+
+    Used for quarterly company events (earnings releases): a value counts from its
+    date until `days` later; days with fewer than `min_events` events are NaN.
+    """
+    if events.empty:
+        return pd.Series(np.nan, index=calendar)
+    daily = events.groupby("date")["value"].agg(["sum", "count"])
+    daily = daily.reindex(calendar.union(daily.index), fill_value=0.0)
+    window = daily.rolling(f"{days}D").sum()
+    return (window["sum"] / window["count"]).where(window["count"] >= min_events).reindex(calendar)
 
 
 def drawdown(s: pd.Series, window: int = 252) -> pd.Series:

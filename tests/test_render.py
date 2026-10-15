@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from gauges import render as R
 from gauges.registry import Indicator
@@ -61,3 +62,16 @@ def test_clean_makes_json_safe_values():
     assert out == [None, 1.2346, 3, True, "2026-10-14", "2026-10-14", None, "x"]
     json.dumps(out)
     assert R._round_list([1.26, math.nan, None]) == [1.3, None, None]
+
+
+def test_stretch_reports_window_means_and_z():
+    idx = pd.date_range("2000-01-01", periods=27 * 12, freq="MS")
+    s = pd.Series(np.r_[np.full(len(idx) - 1, 20.0) + np.tile([-1.0, 1.0], (len(idx) - 1) // 2 + 1)[:len(idx) - 1], 30.0],
+                  index=idx)
+    out = R.stretch(s, "CAPE", "x", "test", "https://example.com")
+    w10 = out["windows"]["10y"]
+    assert out["value"] == 30.0 and set(out["windows"]) == {"5y", "10y", "20y", "all"}
+    window = s[s.index > idx[-1] - pd.DateOffset(years=10)]
+    assert w10["z"] == pytest.approx(round((30 - window.mean()) / window.std(), 2))
+    assert w10["pct"] > 99
+    assert R.stretch(s.iloc[:5], "x", "x", "t", "u") is None

@@ -34,6 +34,8 @@ CAPEX_TAGS = {   # per-company XBRL tag for cash capex (EDGAR probe, Phase 1)
 }
 OCF_TAG = "NetCashProvidedByUsedInOperatingActivities"
 RPO_TAG = "RevenueRemainingPerformanceObligation"
+REVENUE_TAGS = ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet"]   # first wins per quarter
+GUIDE_GAP_DAYS = 200   # consecutive guides further apart than this are not compared
 RPO_COMPANIES = ["MSFT", "GOOGL", "ORCL"]   # AMZN's tag stopped in 2020; META does not tag RPO
 MEMORY_LAYER = "memory"
 FX = {".KS": "KRW=X"}
@@ -350,6 +352,61 @@ class Features:
         share = (window["sum"] / window["count"]).where(window["count"] >= 3) * 100
         return self._daily(share.reindex(self.calendar))
 
+    # ----------------------------------------------------- earnings releases
+    def release_events(self, metric: str) -> pd.DataFrame:
+        """(ticker, date, value) for one releases metric; dated when public (filing date + lag)."""
+        df = self.con.execute(
+            "SELECT split_part(series, '.', 1) AS ticker, obs_date AS date, arg_max(value, fetched_at) AS value "
+            "FROM raw_observations WHERE source = 'releases' AND series LIKE ? GROUP BY 1, 2 ORDER BY 2",
+            [f"%.{metric}"]).df()
+        if df.empty:
+            return df
+        df["date"] = pd.to_datetime(df["date"]) + self.lag("releases", f"X.{metric}")
+        return df
+
+    def panel_release_metric(self, metric: str, days: int, min_releases: int) -> pd.DataFrame:
+        """Average of a per-release measure across the basket's releases in the trailing window."""
+        ev = self.release_events(metric)
+        return self._daily(T.event_window_mean(ev[["date", "value"]] if not ev.empty else ev, self.calendar,
+                                               days, min_releases))
+
+    def guidance_growth_events(self) -> pd.DataFrame:
+        """Growth of each guided next-quarter revenue midpoint over the same company's previous guide (%)."""
+        ev = self.release_events("rev_guide")
+        rows = []
+        for ticker, g in ev.groupby("ticker") if not ev.empty else []:
+            g = g.sort_values("date")
+            for (d0, v0), (d1, v1) in zip(g[["date", "value"]].values[:-1], g[["date", "value"]].values[1:]):
+                if (d1 - d0).days <= GUIDE_GAP_DAYS and v0 > 0:
+                    rows.append({"ticker": ticker, "date": d1, "value": (v1 / v0 - 1) * 100})
+        return pd.DataFrame(rows, columns=["ticker", "date", "value"])
+
+    def panel_release_guidance_growth(self, days: int, min_releases: int) -> pd.DataFrame:
+        ev = self.guidance_growth_events()
+        return self._daily(T.event_window_mean(ev[["date", "value"]], self.calendar, days, min_releases))
+
+    def surprise_events(self) -> pd.DataFrame:
+        """EPS surprise (%) per basket report, dated at the EDGAR 8-K Item 2.02 filing (Finnhub: last 4 quarters)."""
+        reports = self.con.execute("SELECT ticker, report_date FROM earnings_events WHERE source = 'edgar_8k_202'").df()
+        reports["report_date"] = pd.to_datetime(reports["report_date"])
+        rows = []
+        for ticker in [t for t in self.baskets.tickers if "." not in t]:
+            actual, est = self.obs("finnhub", f"{ticker}.eps_actual"), self.obs("finnhub", f"{ticker}.eps_estimate")
+            dates = sorted(reports.loc[reports["ticker"] == ticker, "report_date"])
+            for period in actual.index.intersection(est.index):
+                report = next((d for d in dates if period < d <= period + pd.Timedelta(days=80)), None)
+                if report is not None and abs(est[period]) > 1e-9:
+                    rows.append({"ticker": ticker, "date": report + pd.Timedelta(days=1),
+                                 "value": (actual[period] / abs(est[period]) - np.sign(est[period])) * 100})
+        return pd.DataFrame(rows, columns=["ticker", "date", "value"])
+
+    def panel_eps_surprise(self, days: int, min_releases: int) -> pd.DataFrame:
+        ev = self.surprise_events()
+        return self._daily(T.event_window_mean(ev[["date", "value"]], self.calendar, days, min_releases))
+
+    def panel_basket_return(self, periods: int) -> pd.DataFrame:
+        return self._daily(T.pct_change(self.basket()["index"], periods))
+
     # ------------------------------------------------------------------- XBRL
     def _quarters(self, ticker: str, tag: str) -> pd.DataFrame:
         facts = self.con.execute(
@@ -375,6 +432,36 @@ class Features:
         value = df[[c for c in df if c.endswith("_v")]].sum(axis=1)
         avail = df[[c for c in df if c.endswith("_f")]].max(axis=1)
         return pd.DataFrame({"value": value, "avail": avail})
+
+    def company_revenue(self, ticker: str) -> pd.DataFrame:
+        """Quarterly revenue (calendar-quarter index) merged across revenue tags, first tag winning."""
+        parts = [p for p in (self._quarters(ticker, tag) for tag in REVENUE_TAGS) if not p.empty]
+        if not parts:
+            return pd.DataFrame(columns=["value", "filed"])
+        merged = pd.concat(parts)
+        return merged[~merged.index.duplicated(keep="first")].sort_index()
+
+    def panel_xbrl_basket_revenue(self) -> pd.DataFrame:
+        """Aggregate TTM revenue growth of the US-listed AI basket; each quarter uses companies with both years."""
+        ttm, filed = {}, {}
+        for ticker in [t for t in self.baskets.tickers if "." not in t]:
+            q = self.company_revenue(ticker)
+            if q.empty:
+                continue
+            consecutive = q.index.to_series().diff().dt.days.rolling(3).max() < 100
+            ttm[ticker] = q["value"].rolling(4).sum().where(consecutive)
+            filed[ticker] = q["filed"]
+        if not ttm:
+            return self.to_calendar(pd.Series(dtype=float))
+        T_ = pd.DataFrame(ttm).sort_index()
+        F_ = pd.DataFrame(filed).reindex(T_.index)
+        both = T_.notna() & T_.shift(4).notna()
+        growth = (T_.where(both).sum(axis=1) / T_.shift(4).where(both).sum(axis=1) - 1) * 100
+        growth = growth.where(both.sum(axis=1) >= 5)
+        avail = F_.where(both).max(axis=1)
+        frame = pd.DataFrame({"value": growth, "avail": pd.to_datetime(avail)}).dropna()
+        return self.to_calendar(pd.Series(frame["value"].to_numpy(), index=frame["avail"]),
+                                pd.Series(frame.index, index=frame["avail"]))
 
     def panel_xbrl_aggregate(self, metric: str) -> pd.DataFrame:
         if metric == "rpo_yoy":

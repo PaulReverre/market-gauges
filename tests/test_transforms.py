@@ -191,3 +191,14 @@ def test_piecewise_and_band_and_ema():
     labels = ["EF", "F", "N", "G", "EG"]
     assert [T.band(v, labels) for v in (0, 19.99, 20, 59.9, 80, 100)] == ["EF", "EF", "F", "N", "EG", "EG"]
     assert T.ema(s([10, 20, 30]), 3).tolist() == [10.0, 15.0, 22.5]
+
+
+def test_share_pct_diff_and_event_window_mean():
+    df = pd.DataFrame({"neg": [44.0, 0.0], "pos": [72.0, 0.0]}, index=IDX[:2])
+    assert T.c_share(df).iloc[0] == pytest.approx(44 / 116 * 100) and np.isnan(T.c_share(df).iloc[1])
+    assert T.c_pct_diff(pd.DataFrame({"pe": [22.0], "avg": [20.0]}, index=IDX[:1])).iloc[0] == pytest.approx(10.0)
+    cal = pd.bdate_range("2026-01-01", "2026-03-31")
+    ev = pd.DataFrame({"date": pd.to_datetime(["2026-01-05", "2026-01-06", "2026-02-20"]), "value": [2.0, 4.0, 9.0]})
+    m = T.event_window_mean(ev, cal, days=30, min_events=2)
+    assert np.isnan(m.loc["2026-01-05"]) and m.loc["2026-01-06"] == pytest.approx(3.0)
+    assert np.isnan(m.loc["2026-02-20"])            # earlier events aged out, only one left
