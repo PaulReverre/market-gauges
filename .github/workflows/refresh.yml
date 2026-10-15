@@ -36,8 +36,8 @@ jobs:
       MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
       FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -87,7 +87,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
       - name: Build site
@@ -97,8 +97,8 @@ jobs:
           cp data/latest.json data/history.json _site/data/
           cp reports/validation.md _site/reports/
           printf '<!doctype html><meta http-equiv="refresh" content="0; url=dashboard/"><a href="dashboard/">Market Gauges</a>\n' > _site/index.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
