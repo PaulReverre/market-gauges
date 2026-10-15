@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gauge Backtest</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 22a12 12 0 0 1 24 0' fill='none' stroke='%232f5bd3' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M16 22l6-8' stroke='%2314171c' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f0f2f5; --text: #14171c; --muted: #5d6676; --faint: #8b93a1;
+  --border: #e2e5ea; --accent: #2f5bd3;
+  --b1: #c2410c; --b2: #e8930c; --b3: #a1a7b3; --b4: #3aa6dd; --b5: #0b5f99;
+  --up: #0b5f99; --down: #c2410c; --red: #d93025; --amber: #e8930c; --green: #188038;
+  --shade: rgba(194, 65, 12, .08); --shade-2: rgba(194, 65, 12, .04);
+  --shadow: 0 1px 2px rgba(16,24,40,.06); --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1014; --surface: #161920; --surface-2: #1d2129; --text: #e8ebf0; --muted: #a0a8b6; --faint: #6f7786;
+    --border: #2a2f39; --accent: #7aa2ff;
+    --b1: #e2622a; --b2: #f0a63a; --b3: #6c7381; --b4: #4cb6ea; --b5: #2f8fd0;
+    --up: #4cb6ea; --down: #f07a47; --red: #f0605a; --amber: #f0a63a; --green: #3fb764;
+    --shade: rgba(240, 122, 71, .13); --shade-2: rgba(240, 122, 71, .06);
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
+header.top { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+header .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 16px; max-width: 1320px; margin: 0 auto; }
+.brand h1 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-size: 12px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs a, .tabs button { font: inherit; background: none; border: 1px solid transparent; color: var(--muted); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.tabs a:hover { text-decoration: none; color: var(--text); }
+.tabs [aria-current="page"], .tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.meta { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--muted); font-size: 12px; }
+.meta b { color: var(--text); font-weight: 600; }
+main { padding: 16px 0 40px; }
+.row-title { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; font-weight: 600; }
+.lede { color: var(--muted); max-width: 900px; margin: 0 0 12px; font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; }
+.card h3 { font-size: 14px; margin: 0 0 2px; }
+.card .sub { color: var(--muted); font-size: 12px; }
+.card .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.grid { display: grid; gap: 14px; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 26px; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; margin: 4px 0 2px; }
+.stat .d { font-size: 12px; color: var(--muted); }
+@media (max-width: 960px) { .grid.three { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .grid.two { grid-template-columns: minmax(0, 1fr); } header.top { position: static; } .meta { margin-left: 0; } }
+.chart { height: 360px; margin-top: 8px; }
+.chart.short { height: 280px; }
+.chart.tiny { height: 240px; }
+.tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 9px; border-top: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; font-size: 11.5px; background: var(--surface-2); position: sticky; top: 0; }
+td.r, th.r { text-align: right; }
+td.wrapc { white-space: normal; min-width: 200px; }
+td.pos { color: var(--up); } td.neg { color: var(--down); }
+td small { color: var(--faint); display: block; font-size: 11px; }
+.hit { font-weight: 600; }
+.hit.yes { color: var(--green); } .hit.partial { color: var(--amber); } .hit.no { color: var(--red); }
+.tag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted); }
+.tag.low { color: var(--down); border-color: color-mix(in srgb, var(--down) 45%, var(--border)); }
+.chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 6px; color: #fff; font-weight: 600; }
+details.more { margin-top: 10px; }
+details.more > summary { cursor: pointer; color: var(--accent); font-size: 12.5px; }
+select { font: inherit; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+.forest { display: grid; grid-template-columns: minmax(180px, 2.2fr) 3fr 70px; gap: 6px 12px; align-items: center; font-size: 12.5px; margin-top: 10px; }
+.forest .lbl small { color: var(--faint); display: block; font-size: 11px; }
+.forest .axis { position: relative; height: 18px; }
+.forest .axis::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--border); }
+.forest .axis .zero { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--faint); }
+.forest .axis .ci { position: absolute; top: 7px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.forest .axis .pt { position: absolute; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); transform: translateX(-5px); }
+.forest .scale { display: flex; justify-content: space-between; color: var(--faint); font-size: 10.5px; }
+.cell { text-align: center; font-variant-numeric: tabular-nums; }
+.cell small { display: block; color: inherit; opacity: .8; font-size: 10.5px; }
+.cell.now { outline: 2px solid var(--text); outline-offset: -2px; }
+.note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.callout { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--surface-2); border-radius: 0 8px 8px 0; color: var(--text); font-size: 13px; margin: 0 0 12px; }
+footer { color: var(--muted); font-size: 11.5px; padding: 20px 0 40px; border-top: 1px solid var(--border); margin-top: 24px; }
+.err { padding: 40px 16px; text-align: center; color: var(--muted); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand"><h1>Market Gauges</h1><span>Backtest and robustness study</span></div>
+    <nav class="tabs">
+      <a href="index.html">Dashboard</a>
+      <a href="backtest.html" aria-current="page">Backtest</a>
+    </nav>
+    <div class="meta" id="meta">Loading…</div>
+  </div>
+</header>
+<main class="wrap" id="main">
+  <p class="lede" id="lede"></p>
+  <div class="stats" id="stats"></div>
+
+  <h2 class="row-title">1 · The gauges through every cycle</h2>
+  <section class="card">
+    <div class="head">
+      <div><h3 id="tl-title">G1 sentiment vs the S&amp;P 500</h3><div class="sub">Weekly closes. Shaded: bear markets (darker) and corrections. Dots: named events.</div></div>
+      <nav class="tabs" id="tl-tabs">
+        <button data-tl="G1" aria-selected="true">G1 sentiment</button>
+        <button data-tl="G2" aria-selected="false">G2 fundamentals</button>
+        <button data-tl="G3" aria-selected="false">G3 AI sentiment</button>
+      </nav>
+    </div>
+    <div class="chart" id="timeline"></div>
+  </section>
+  <div class="grid two" style="margin-top:14px">
+    <section class="card"><h3>Bear markets and corrections</h3><div class="sub">Turning points found in S&amp;P 500 closes (20% rule; corrections 10–20%).</div><div class="tablewrap" id="declines"></div></section>
+    <section class="card"><h3>Bull markets</h3><div class="sub">What G1 read on the way up, and how much was left after the first Extreme Greed reading.</div><div class="tablewrap" id="bulls"></div></section>
+  </div>
+
+  <h2 class="row-title">2 · Peak fear and peak greed</h2>
+  <div class="grid two">
+    <section class="card"><h3>S&amp;P 500 after G1 extremes</h3><div class="sub" id="ep-sub"></div><div class="chart short" id="episodes"></div></section>
+    <section class="card"><h3>Average S&amp;P 500 return by G1 band</h3><div class="sub" id="band-sub"></div><div class="chart short" id="bandchart"></div></section>
+  </div>
+  <section class="card" style="margin-top:14px">
+    <h3>Extreme Fear and Extreme Greed episodes</h3>
+    <div class="sub">p = share of random-entry draws (same count, random days) that did at least as well (fear) or as badly (greed). Small is notable.</div>
+    <div class="tablewrap" id="ep-summary"></div>
+    <details class="more"><summary>Every episode</summary><div class="tablewrap" id="ep-list"></div></details>
+    <details class="more"><summary>Sensitivity to the threshold</summary><div class="tablewrap" id="thresholds"></div></details>
+  </section>
+
+  <h2 class="row-title">3 · Named events</h2>
+  <section class="card">
+    <div class="head"><div><h3>What the gauge showed, and what followed</h3><div class="sub" id="ev-sub"></div></div>
+      <select id="ev-filter" aria-label="Filter events"><option value="all">All events</option><option value="trough">Market lows</option><option value="peak">Market tops</option><option value="shock">Shocks</option><option value="ai">AI events</option></select></div>
+    <div class="tablewrap" id="events"></div>
+  </section>
+
+  <h2 class="row-title">4 · Strategies built on the gauges</h2>
+  <section class="card">
+    <div class="head"><div><h3>Growth of $1 (log scale)</h3><div class="sub" id="st-sub"></div></div><select id="st-pick" aria-label="Strategy"></select></div>
+    <div class="chart" id="curves"></div>
+    <div class="tablewrap" id="strategies"></div>
+  </section>
+
+  <h2 class="row-title">5 · Robustness checks</h2>
+  <div class="grid three">
+    <section class="card"><h3>Greed trim grid</h3><div class="sub">Δ Sharpe vs buy-and-hold · trim to 50%</div><div class="chart tiny" id="hm-greed"></div></section>
+    <section class="card"><h3>Fear add grid</h3><div class="sub">Δ Sharpe vs buy-and-hold · 60% base</div><div class="chart tiny" id="hm-fear"></div></section>
+    <section class="card"><h3>Contrarian tilt grid</h3><div class="sub">Δ Sharpe vs buy-and-hold · 50% floor</div><div class="chart tiny" id="hm-tilt"></div></section>
+  </div>
+  <div class="grid two" style="margin-top:14px">
+    <section class="card"><h3>Placebo: same exposure, shuffled timing</h3><div class="sub" id="pl-sub"></div><div class="tablewrap" id="placebo"></div></section>
+    <section class="card"><h3>Execution delay and trading costs</h3><div class="sub">Δ Sharpe vs buy-and-hold</div><div class="tablewrap" id="delaycost"></div></section>
+  </div>
+  <div class="grid two" style="margin-top:14px">
+    <section class="card"><h3>Sub-periods</h3><div class="sub">Sharpe: strategy vs buy-and-hold in each period</div><div class="tablewrap" id="subperiods"></div></section>
+    <section class="card"><h3>Signal variants and leave-one-pillar-out</h3><div class="sub" id="var-sub"></div><div class="tablewrap" id="variants"></div></section>
+  </div>
+
+  <h2 class="row-title">6 · Correlation coefficients</h2>
+  <section class="card">
+    <h3>Gauge reading vs what followed</h3>
+    <div class="sub">Pearson r with 95% moving-block bootstrap interval. Negative G1/G3 = contrarian; positive G2/G4 = health that holds up. Drawdown targets: positive = shallower drawdowns after higher readings.</div>
+    <div id="forest"></div>
+    <details class="more"><summary>All signals, horizons and samples</summary><div class="tablewrap" id="corrtable"></div></details>
+  </section>
+
+  <h2 class="row-title">7 · Scenarios</h2>
+  <div class="grid two">
+    <section class="card"><h3>What-if: G1 band × G2 band</h3><div class="sub" id="grid-sub"></div><div class="tablewrap" id="bandgrid"></div></section>
+    <section class="card"><h3>Today's closest historical analogs</h3><div class="sub" id="an-sub"></div><div class="tablewrap" id="analogs"></div>
+      <details class="more"><summary>Analog dates</summary><div class="tablewrap" id="analog-list"></div></details></section>
+  </div>
+  <section class="card" style="margin-top:14px"><h3>Stress replays</h3><div class="sub">Return / max drawdown inside each decline, then the 12 months after the low.</div><div class="tablewrap" id="stress"></div></section>
+
+  <h2 class="row-title">8 · Monte Carlo</h2>
+  <div class="grid two">
+    <section class="card"><div class="head"><div><h3>Next 12 months from today's reading</h3><div class="sub" id="fan-sub"></div></div>
+      <select id="fan-pick" aria-label="Simulation"><option value="spy">SPY · G1</option><option value="smh">SMH · G3</option></select></div>
+      <div class="chart short" id="fan"></div><div class="tablewrap" id="fantable"></div></section>
+    <section class="card"><h3>Strategies over 10-year resampled histories</h3><div class="sub" id="mc-sub"></div><div class="tablewrap" id="mcstrat"></div></section>
+  </div>
+  <footer id="footer"></footer>
+</main>
+
+<script>
+"use strict";
+const DATA_PATHS = ["../data/", "data/", "./"];
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+const num = (v, nd = 1) => isNum(v) ? v.toFixed(nd) : "—";
+const sgn = (v, nd = 1) => isNum(v) ? (v > 0 ? "+" : "") + v.toFixed(nd) : "—";
+const pct = (v, nd = 1) => isNum(v) ? sgn(v, nd) + "%" : "—";
+const pval = (p) => !isNum(p) ? "—" : p < 0.001 ? "<0.001" : p.toFixed(3);
+const cls = (v) => !isNum(v) ? "" : v > 0 ? "pos" : v < 0 ? "neg" : "";
+const td = (v, nd = 1, suffix = "%") => `<td class="r num ${cls(v)}">${isNum(v) ? sgn(v, nd) + suffix : "—"}</td>`;
+const dateLbl = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+const bandColor = (v) => v == null ? css("--faint") : css(["--b1", "--b2", "--b3", "--b4", "--b5"][Math.min(4, Math.floor(v / 20))]);
+const NAMES = { bh: "Buy and hold", greed_trim: "Greed trim", fear_add: "Fear add", tilt: "Contrarian tilt", health: "Health filter",
+  fragility: "Fragility de-risk", tilt_health: "Tilt + health", ai_tilt: "AI contrarian tilt" };
+let D = null, TL = "G1", FAN = "spy";
+const CHARTS = {};
+
+async function load(name) {
+  for (const base of DATA_PATHS) {
+    try {
+      const r = await fetch(base + name, { cache: "no-cache" });
+      if (r.ok) return await r.json();
+    } catch (e) { /* next path */ }
+  }
+  throw new Error(`Could not load ${name}`);
+}
+function chart(id) {
+  const el = document.getElementById(id);
+  if (CHARTS[id]) CHARTS[id].dispose();
+  CHARTS[id] = echarts.init(el, null, { renderer: "canvas" });
+  return CHARTS[id];
+}
+const axisStyle = () => ({ axisLine: { lineStyle: { color: css("--border") } }, axisLabel: { color: css("--muted"), fontSize: 11 },
+  splitLine: { lineStyle: { color: css("--border"), type: "dashed" } } });
+const tooltipStyle = () => ({ backgroundColor: css("--surface"), borderColor: css("--border"), textStyle: { color: css("--text"), fontSize: 12 } });
+const table = (head, rows) => `<table><thead><tr>${head.map((h) => `<th class="${h.r ? "r" : ""}">${h.t ?? h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+const H = (t, r = true) => ({ t, r });
+
+/* ------------------------------------------------------------- header */
+function renderHeader() {
+  const sc = D.scorecard, hc = sc.headline_corr || {};
+  document.getElementById("meta").innerHTML = `<span>Data through <b>${dateLbl(D.as_of)}</b></span><span>Built ${new Date(D.generated).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span><a href="../reports/robustness.md">Full report</a>`;
+  document.getElementById("lede").innerHTML = `What the dashboard would have shown through every bull and bear market, crisis and named event since 2000, what followed peak fear and peak greed, and whether rules built on the gauges hold up. Every reading is point in time; history counts as reliable from <b>${dateLbl(D.reliable_from)}</b>, when G1 coverage stays at or above 50%. Indicators were pruned on this same history and the AI basket is chosen with hindsight, so treat results as in-sample.`;
+  const fe3 = sc.fear_3m, fx1 = sc.fear_exit_1m, bf = sc.band_fear, tr = sc.troughs || {}, pk = sc.peaks || {}, ec = (sc.event_corr || {}).equity_3m || {};
+  const best = D.strategies.find((s) => s.key === sc.best_sharpe), pl = (sc.placebo || {})[sc.best_sharpe] || {};
+  const fan = (sc.fan || {}).spy_g1 || {}, fan0 = (sc.fan || {}).spy_all || {};
+  const stats = [
+    ["G1 vs next 3 months, every day", `r = ${num(hc.pearson, 3)}`, `95% CI ${num((hc.pearson_ci || [])[0], 2)} to ${num((hc.pearson_ci || [])[1], 2)} · Spearman ${num(hc.spearman, 3)}`],
+    ["G1 on named event days vs next 3 months", `r = ${num(ec.pearson, 2)}`, `${ec.n || 0} equity events · Spearman ${num(ec.spearman, 2)}`],
+    ["Every Extreme Fear day (reliable sample)", pct(bf["12m"]), `S&P 500 next 12 months, up ${num(bf.hit12m, 0)}% of the time · ${bf.days} days`],
+    ["Leaving Extreme Fear", pct(fx1.mean), `next month, ${fx1.n} episodes, p ${pval(fx1.p)} · entering: ${pct(fe3.mean)} over 3 months (p ${pval(fe3.p)})`],
+    ["Market lows caught", `${tr.yes ?? 0} of ${tr.n ?? 0}`, `G1 at Extreme Fear within 10 days · tops warned: ${pk.yes ?? 0} of ${pk.n ?? 0}`],
+    [`Best risk-adjusted rule`, best ? best.name : "—", best ? `Sharpe ${num(best.metrics.sharpe, 2)} vs ${num(best.buy_hold.sharpe, 2)} · max DD ${pct(best.metrics.max_dd)} vs ${pct(best.buy_hold.max_dd)} · placebo p ${pval(pl.p_sharpe)}` : ""],
+    [`Next 12 months from ${fan.state || "today"} (Monte Carlo)`, pct(fan.median), `median SPY · P(loss) ${num(fan.p_loss, 0)}% vs ${num(fan0.p_loss, 0)}% unconditional`],
+  ];
+  document.getElementById("stats").innerHTML = stats.map(([k, v, d]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v num">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join("");
+}
+
+/* ----------------------------------------------------------- timeline */
+function renderTimeline() {
+  const s = D.series, g = TL, ai = g === "G3";
+  const asset = ai ? s.smh : s.spx, assetName = ai ? "SMH" : "S&P 500";
+  document.getElementById("tl-title").textContent = `${g} ${ai ? "AI sentiment" : g === "G1" ? "sentiment" : "fundamentals"} vs the ${assetName}`;
+  const bears = D.cycles.bears.map((c) => [{ xAxis: c.start, itemStyle: { color: css("--shade") } }, { xAxis: c.end }]);
+  const corr = D.cycles.corrections.map((c) => [{ xAxis: c.start, itemStyle: { color: css("--shade-2") } }, { xAxis: c.end }]);
+  const evs = D.events.rows.filter((e) => (ai ? e.market === "ai" : e.market === "equity") && isNum((e.readings || {})[g]));
+  const c = chart("timeline");
+  c.setOption({
+    animation: false, tooltip: { trigger: "axis", ...tooltipStyle(), valueFormatter: (v) => isNum(v) ? v.toFixed(1) : "—" },
+    legend: { top: 0, textStyle: { color: css("--muted") } },
+    grid: { left: 40, right: 56, top: 30, bottom: 50 },
+    dataZoom: [{ type: "inside" }, { type: "slider", height: 18, bottom: 8, borderColor: css("--border"), textStyle: { color: css("--muted") } }],
+    xAxis: { type: "time", ...axisStyle(), splitLine: { show: false } },
+    yAxis: [{ type: "value", min: 0, max: 100, interval: 20, ...axisStyle() },
+            { type: "log", position: "right", scale: true, ...axisStyle(), axisLabel: { color: css("--muted"), fontSize: 11, showMinLabel: false, showMaxLabel: false },
+              splitLine: { show: false }, min: (v) => v.min * 0.9, max: (v) => v.max * 1.05 }],
+    series: [
+      { name: g, type: "line", data: s.dates.map((d, i) => [d, s[g][i]]), showSymbol: false, lineStyle: { width: 1.3, color: css("--accent") }, itemStyle: { color: css("--accent") }, z: 3,
+        markArea: { silent: true, data: [...bears, ...corr] },
+        markLine: { silent: true, symbol: "none", lineStyle: { color: css("--faint"), type: "dotted" }, label: { show: false }, data: [{ yAxis: 20 }, { yAxis: 80 }] } },
+      { name: assetName, type: "line", yAxisIndex: 1, data: s.dates.map((d, i) => [d, asset[i]]), showSymbol: false, lineStyle: { width: 1.2, color: css("--muted") }, itemStyle: { color: css("--muted") } },
+      { name: "Named events", type: "scatter", color: css("--amber"), data: evs.map((e) => ({ value: [e.trade_date, e.readings[g]], name: e.name, kind: e.kind })), symbolSize: 8,
+        itemStyle: { color: (p) => ({ trough: css("--green"), peak: css("--red") }[p.data.kind] || css("--amber")), borderColor: css("--surface"), borderWidth: 1 }, z: 4,
+        tooltip: { trigger: "item", formatter: (p) => `<b>${esc(p.data.name)}</b><br>${dateLbl(p.value[0])} · ${g} ${num(p.value[1], 0)}` } },
+    ],
+  });
+}
+
+/* ------------------------------------------------------------- cycles */
+function renderCycles() {
+  const rows = [...D.cycles.bears.map((c) => ({ ...c, type: "Bear" })), ...D.cycles.corrections.map((c) => ({ ...c, type: "Correction" }))]
+    .sort((a, b) => a.start.localeCompare(b.start));
+  document.getElementById("declines").innerHTML = table(
+    ["Type", "Peak → low", H("Fall"), H("G1 low"), H("Lead (days)"), "First Extreme Fear", H("Further fall"), H("12m after fear"), H("12m after low"), H("Cov %")],
+    rows.map((c) => `<tr><td>${c.type}</td><td>${dateLbl(c.start)} → ${dateLbl(c.end)}${c.ongoing ? " <span class='tag'>so far</span>" : ""}</td>${td(c.change)}
+      <td class="r num" style="color:${bandColor(c.g1_low)}">${num(c.g1_low, 0)}</td><td class="r num">${c.g1_low_lead == null ? "—" : sgn(c.g1_low_lead, 0)}</td>
+      <td>${dateLbl(c.first_fear)}</td>${td(c.further_fall)}${td(c.fear_12m)}${td(c.trough_12m)}
+      <td class="r num">${isNum(c.g1_cov) ? num(c.g1_cov, 0) + (c.g1_cov < 50 ? " <span class='tag low'>low</span>" : "") : "—"}</td></tr>`));
+  document.getElementById("bulls").innerHTML = table(
+    ["Low → peak", H("Gain"), H("G1 max"), H("% days Greed+"), "First Extreme Greed", H("Gain after it"), H("G1 at peak"), H("Fragility at peak")],
+    D.cycles.bulls.map((c) => `<tr><td>${dateLbl(c.start)} → ${dateLbl(c.end)}${c.ongoing ? " <span class='tag'>so far</span>" : ""}</td>${td(c.change)}
+      <td class="r num" style="color:${bandColor(c.g1_max)}">${num(c.g1_max, 0)}</td><td class="r num">${num(c.greed_share, 0)}</td><td>${dateLbl(c.first_greed)}</td>
+      ${td(c.gain_after_greed)}<td class="r num">${num(c.g1_end, 0)}</td><td class="r num">${num(c.frag_end, 0)}</td></tr>`));
+}
+
+/* ----------------------------------------------------------- episodes */
+function renderEpisodes() {
+  const z = D.zones.G1, hz = ["1m", "3m", "6m", "12m"];
+  const pick = (zone, a) => hz.map((h) => (z[zone].summary.find((s) => s.anchor === a && s.horizon === h) || {}));
+  const fearIn = pick("fear", "start"), fearOut = pick("fear", "exit"), greedIn = pick("greed", "start");
+  document.getElementById("ep-sub").textContent = `${z.fear.episodes.length} Extreme Fear and ${z.greed.episodes.length} Extreme Greed episodes since 2000 (G1 ≤ 20 / ≥ 80).`;
+  const c = chart("episodes");
+  c.setOption({
+    animation: false, tooltip: { trigger: "axis", ...tooltipStyle(), valueFormatter: (v) => pct(v) }, legend: { top: 0, textStyle: { color: css("--muted") } },
+    grid: { left: 44, right: 12, top: 34, bottom: 24 }, xAxis: { type: "category", data: hz.map((h) => "Next " + h), ...axisStyle() },
+    yAxis: { type: "value", ...axisStyle(), axisLabel: { color: css("--muted"), formatter: (v) => v + "%" } },
+    series: [
+      { name: "Entering Extreme Fear", type: "bar", data: fearIn.map((s) => s.mean), itemStyle: { color: css("--b2") } },
+      { name: "Leaving Extreme Fear", type: "bar", data: fearOut.map((s) => s.mean), itemStyle: { color: css("--b1") } },
+      { name: "Entering Extreme Greed", type: "bar", data: greedIn.map((s) => s.mean), itemStyle: { color: css("--b5") } },
+      { name: "All days", type: "bar", data: fearIn.map((s) => s.base), itemStyle: { color: css("--b3") } },
+    ],
+  });
+  const bt = D.band_tables["G1 reliable"];
+  document.getElementById("band-sub").textContent = `Every day since ${dateLbl(D.reliable_from)}, not just episodes. Light bars: next 3 months; solid: next 12 months.`;
+  const b = chart("bandchart");
+  b.setOption({
+    animation: false, tooltip: { trigger: "axis", ...tooltipStyle(), valueFormatter: (v) => pct(v) },
+    grid: { left: 44, right: 12, top: 14, bottom: 24 }, xAxis: { type: "category", data: bt.map((r) => `${r.band} (${r.days})`), ...axisStyle(), axisLabel: { color: css("--muted"), fontSize: 10.5, interval: 0 } },
+    yAxis: { type: "value", ...axisStyle(), axisLabel: { color: css("--muted"), formatter: (v) => v + "%" } },
+    series: [
+      { name: "Next 3m", type: "bar", data: bt.map((r, i) => ({ value: r["3m"], itemStyle: { color: css(["--b1", "--b2", "--b3", "--b4", "--b5"][i]), opacity: 0.55 } })) },
+      { name: "Next 12m", type: "bar", data: bt.map((r, i) => ({ value: r["12m"], itemStyle: { color: css(["--b1", "--b2", "--b3", "--b4", "--b5"][i]) } })) },
+    ],
+  });
+  const rows = [];
+  for (const [zone, label] of [["fear", "Extreme Fear"], ["greed", "Extreme Greed"]]) {
+    for (const a of ["start", "extreme", "exit"]) {
+      const ss = pick(zone, a);
+      rows.push(`<tr><td>${label}</td><td>${{ start: "Entering", extreme: "At the extreme (hindsight)", exit: "Leaving" }[a]}</td><td class="r num">${ss[0].n ?? 0}</td>
+        ${ss.map((s) => `<td class="r num ${cls(s.mean)}">${pct(s.mean)}<small>p ${pval(s.p)}</small></td>`).join("")}<td class="r num">${num(ss[3].hit, 0)}%</td></tr>`);
+    }
+  }
+  const base = pick("fear", "start");
+  rows.push(`<tr><td colspan="2">All days with a reading</td><td></td>${base.map((s) => `<td class="r num">${pct(s.base)}</td>`).join("")}<td class="r num">${num(base[3].base_hit, 0)}%</td></tr>`);
+  document.getElementById("ep-summary").innerHTML = table(["Zone", "Measured from", H("n"), H("Next 1m"), H("Next 3m"), H("Next 6m"), H("Next 12m"), H("% up 12m")], rows);
+  const list = [...z.fear.episodes.map((e) => ({ ...e, zone: "Fear" })), ...z.greed.episodes.map((e) => ({ ...e, zone: "Greed" }))].sort((a, b) => a.start.localeCompare(b.start));
+  document.getElementById("ep-list").innerHTML = table(["Zone", "Start", "Extreme", "Exit", H("Days"), H("Extreme"), H("3m from start"), H("12m from start"), H("12m from exit"), H("Worst DD 3m")],
+    list.map((e) => `<tr><td>${e.zone}</td><td>${dateLbl(e.start)}</td><td>${dateLbl(e.extreme)}</td><td>${dateLbl(e.exit)}</td><td class="r num">${e.days}</td>
+      <td class="r num" style="color:${bandColor(e.extreme_value)}">${num(e.extreme_value, 0)}</td>${td(e.start_3m)}${td(e.start_12m)}${td(e.exit_12m)}${td(e.mdd3m)}</tr>`));
+  document.getElementById("thresholds").innerHTML = table(["Zone", H("Threshold"), H("Episodes"), H("Excess 3m (pts)"), H("p"), H("Excess 12m (pts)"), H("p")],
+    D.thresholds.map((t) => `<tr><td>${t.zone}</td><td class="r num">${t.zone === "fear" ? "≤" : "≥"} ${t.level}</td><td class="r num">${t.episodes}</td>${td(t.excess_3m, 1, "")}<td class="r num">${pval(t.p_3m)}</td>${td(t.excess_12m, 1, "")}<td class="r num">${pval(t.p_12m)}</td></tr>`));
+}
+
+/* ------------------------------------------------------------- events */
+function renderEvents() {
+  const f = document.getElementById("ev-filter").value, g = D.events.graded;
+  document.getElementById("ev-sub").textContent = `Lows: Extreme Fear within 10 days = hit (${g.trough?.yes ?? 0}/${g.trough?.n ?? 0}). Tops: Extreme Greed or fragility ≥ 80 in the 3 months before = hit (${g.peak?.yes ?? 0}/${g.peak?.n ?? 0}). Shocks are not graded. Equity events read G1 vs the S&P 500; AI events read G3 vs SMH.`;
+  const rows = D.events.rows.filter((e) => f === "all" || (f === "ai" ? e.market === "ai" : e.kind === f && e.market === "equity" || (e.kind === f && f !== "shock" && e.market === "ai")));
+  const hit = (h) => h == null ? "—" : `<span class="hit ${h}">${{ yes: "✓ hit", partial: "◐ partial", no: "✗ miss" }[h]}</span>`;
+  document.getElementById("events").innerHTML = table(
+    ["Date", "Event", "Reading", H("1m change"), "What the gauge did", "Hit", H("Next 1m"), H("Next 3m"), H("Next 6m"), H("Next 12m"), H("Worst DD 3m"), H("12m after fear signal")],
+    rows.map((e) => `<tr><td>${dateLbl(e.trade_date)}${e.moved_from ? `<small>list: ${dateLbl(e.moved_from)}</small>` : ""}</td>
+      <td class="wrapc">${esc(e.name)}<small>${e.kind}${e.market === "ai" ? " · AI" : ""}</small></td>
+      <td>${isNum(e.reading) ? `<span class="chip" style="background:${bandColor(e.reading)}">${e.gauge} ${num(e.reading, 0)}</span> <small>${esc(e.band)}${isNum(e.coverage) && e.coverage < 50 ? " · low coverage" : ""}</small>` : "no reading"}</td>
+      ${td(e.change_1m, 0, "")}<td class="wrapc">${esc(e.signal || "—")}</td><td>${hit(e.hit)}</td>
+      ${td(e.ret_1m)}${td(e.ret_3m)}${td(e.ret_6m)}${td(e.ret_12m)}${td(e.mdd3m)}${td(e.signal_12m)}</tr>`));
+}
+
+/* --------------------------------------------------------- strategies */
+function renderStrategies() {
+  const sel = document.getElementById("st-pick");
+  if (!sel.options.length) {
+    sel.innerHTML = D.strategies.map((s) => `<option value="${s.key}">${esc(s.name)}</option>`).join("");
+    sel.value = D.scorecard.best_sharpe || D.strategies[0].key;
+  }
+  const s = D.strategies.find((x) => x.key === sel.value);
+  document.getElementById("st-sub").textContent = `${s.rule}. Trades at the close after the signal; idle cash earns the fed funds rate. Matched = constant mix at the same ${num(s.exposure, 0)}% average exposure.`;
+  const cv = s.curve, c = chart("curves");
+  c.setOption({
+    animation: false, tooltip: { trigger: "axis", ...tooltipStyle(), valueFormatter: (v) => isNum(v) ? "$" + v.toFixed(2) : "—" },
+    legend: { top: 0, textStyle: { color: css("--muted") } }, grid: { left: 48, right: 16, top: 30, bottom: 28 },
+    xAxis: { type: "time", ...axisStyle(), splitLine: { show: false } }, yAxis: { type: "log", ...axisStyle(), min: (v) => v.min * 0.85, max: (v) => v.max * 1.1, axisLabel: { color: css("--muted"), showMinLabel: false, showMaxLabel: false, formatter: (v) => "$" + v } },
+    series: [
+      { name: s.name, type: "line", data: cv.dates.map((d, i) => [d, cv.strategy[i]]), showSymbol: false, lineStyle: { width: 1.6, color: css("--accent") }, itemStyle: { color: css("--accent") } },
+      { name: `Buy and hold ${s.asset}`, type: "line", data: cv.dates.map((d, i) => [d, cv.buy_hold[i]]), showSymbol: false, lineStyle: { width: 1.2, color: css("--muted") }, itemStyle: { color: css("--muted") } },
+      { name: "Matched mix", type: "line", data: cv.dates.map((d, i) => [d, cv.matched[i]]), showSymbol: false, lineStyle: { width: 1, type: "dashed", color: css("--faint") }, itemStyle: { color: css("--faint") } },
+    ],
+  });
+  const pl = D.checks.placebo || {};
+  document.getElementById("strategies").innerHTML = table(
+    ["Strategy", H("Avg exposure"), H("CAGR"), H("Buy-hold"), H("Matched"), H("Sharpe"), H("Buy-hold"), H("Max DD"), H("Buy-hold"), H("Turnover/yr"), H("Placebo p")],
+    D.strategies.map((x) => `<tr${x.key === s.key ? ` style="background:var(--surface-2)"` : ""}><td class="wrapc">${esc(x.name)}<small>${esc(x.rule)}</small></td>
+      <td class="r num">${num(x.exposure, 0)}%</td><td class="r num">${num(x.metrics.cagr, 2)}%</td><td class="r num">${num(x.buy_hold.cagr, 2)}%</td><td class="r num">${num(x.matched.cagr, 2)}%</td>
+      <td class="r num ${cls(x.d_sharpe)}">${num(x.metrics.sharpe, 2)}</td><td class="r num">${num(x.buy_hold.sharpe, 2)}</td>
+      <td class="r num ${cls(x.d_mdd)}">${num(x.metrics.max_dd, 1)}%</td><td class="r num">${num(x.buy_hold.max_dd, 1)}%</td>
+      <td class="r num">${num(x.turnover, 0)}%</td><td class="r num">${pval((pl[x.key] || {}).p_sharpe)}</td></tr>`));
+}
+
+/* --------------------------------------------------------- robustness */
+function heatmap(id, rows, xKey, yKey, filter, xLabel, yLabel) {
+  const data = rows.filter(filter);
+  const xs = [...new Set(data.map((r) => r[xKey]))].sort((a, b) => a - b), ys = [...new Set(data.map((r) => r[yKey]))].sort((a, b) => a - b);
+  const vals = data.map((r) => [xs.indexOf(r[xKey]), ys.indexOf(r[yKey]), r.d_sharpe]);
+  const m = Math.max(0.02, ...vals.map((v) => Math.abs(v[2] ?? 0)));
+  const c = chart(id);
+  c.setOption({
+    animation: false, tooltip: { ...tooltipStyle(), formatter: (p) => `${xLabel} ${xs[p.value[0]]} · ${yLabel} ${ys[p.value[1]]}<br>Δ Sharpe ${sgn(p.value[2], 3)}` },
+    grid: { left: 56, right: 10, top: 10, bottom: 40 },
+    xAxis: { type: "category", data: xs, name: xLabel, nameLocation: "middle", nameGap: 26, nameTextStyle: { color: css("--muted") }, ...axisStyle(), splitLine: { show: false } },
+    yAxis: { type: "category", data: ys, name: yLabel, nameLocation: "middle", nameGap: 38, nameTextStyle: { color: css("--muted") }, ...axisStyle(), splitLine: { show: false } },
+    visualMap: { show: false, min: -m, max: m,
+      inRange: { color: [css("--down"), css("--surface-2"), css("--up")] }, formatter: (v) => sgn(v, 2) },
+    series: [{ type: "heatmap", data: vals, label: { show: true, color: css("--text"), fontSize: 10, formatter: (p) => sgn(p.value[2], 2) }, itemStyle: { borderColor: css("--surface"), borderWidth: 1 } }],
+  });
+}
+function renderRobustness() {
+  const gr = D.checks.grids;
+  heatmap("hm-greed", gr.greed_trim.rows, "hi", "back", (r) => r.trim === 0.5, "Trim at G1 ≥", "Back at ≤");
+  heatmap("hm-fear", gr.fear_add.rows, "lo", "hold", () => true, "Fear at G1 ≤", "Hold (days)");
+  heatmap("hm-tilt", gr.tilt.rows, "lower", "upper", (r) => r.floor === 0.5, "100% at G1 ≤", "50% at G1 ≥");
+  const pl = D.checks.placebo || {}, anyP = Object.values(pl).find((p) => p && p.shifts);
+  document.getElementById("pl-sub").textContent = `Each strategy's exposure path slid along the calendar (${anyP ? anyP.shifts.toLocaleString() : "—"} random shifts of a year or more). p = share of shifted paths that did at least as well.`;
+  document.getElementById("placebo").innerHTML = table(["Strategy", H("Sharpe"), H("Placebo median"), H("Placebo 95th"), H("p")],
+    Object.entries(pl).filter(([, p]) => p && isNum(p.sharpe)).map(([k, p]) => `<tr><td>${NAMES[k] || k}</td><td class="r num">${num(p.sharpe, 2)}</td><td class="r num">${num(p.null_sharpe_median, 2)}</td><td class="r num">${num(p.null_sharpe_p95, 2)}</td><td class="r num"><b>${pval(p.p_sharpe)}</b></td></tr>`));
+  const keys = [...new Set(D.checks.delay.map((r) => r.key))];
+  const dl = [...new Set(D.checks.delay.map((r) => r.delay))], cs = [...new Set(D.checks.costs.map((r) => r.cost))];
+  document.getElementById("delaycost").innerHTML = table(["Strategy", ...dl.map((d) => H(`${d}d delay`)), ...cs.map((c) => H(`${c} bps`))],
+    keys.map((k) => `<tr><td>${NAMES[k]}</td>${dl.map((d) => td((D.checks.delay.find((r) => r.key === k && r.delay === d) || {}).d_sharpe, 3, "")).join("")}${cs.map((c) => td((D.checks.costs.find((r) => r.key === k && r.cost === c) || {}).d_sharpe, 3, "")).join("")}</tr>`));
+  const periods = [...new Set(D.checks.subperiods.map((r) => r.period))], sk = [...new Set(D.checks.subperiods.map((r) => r.key))];
+  document.getElementById("subperiods").innerHTML = table(["Strategy", ...periods.map((p) => H(p))],
+    sk.map((k) => `<tr><td>${NAMES[k]}</td>${periods.map((p) => { const r = D.checks.subperiods.find((x) => x.key === k && x.period === p); return r ? `<td class="r num ${cls(r.d_sharpe)}">${num(r.sharpe, 2)}<small>vs ${num(r.sharpe_bh, 2)}</small></td>` : "<td class='r'>—</td>"; }).join("")}</tr>`));
+  const v = D.checks.variants;
+  document.getElementById("var-sub").textContent = `G1 rebuilt from stored pillars matches the dashboard within ${num(v.reconstruction_error, 4)} points; each row drops or swaps one ingredient.`;
+  document.getElementById("variants").innerHTML = table(["Variant", H("Corr with G1"), H("IC next 3m"), H("Fear episodes"), H("Tilt Δ Sharpe"), H("Greed trim Δ Sharpe")],
+    v.rows.map((r) => `<tr><td>${esc(r.variant)}</td><td class="r num">${num(r.corr_with_g1, 2)}</td><td class="r num">${num(r.ic_fwd3m, 3)}</td><td class="r num">${r.fear_episodes}</td>${td(r.tilt_d_sharpe, 3, "")}${td(r.greed_trim_d_sharpe, 3, "")}</tr>`));
+}
+
+/* ------------------------------------------------------- correlations */
+function renderCorrelations() {
+  const rows = D.correlations.rows;
+  const get = (sig, tgt) => rows.find((r) => r.signal === sig && r.target === tgt && r.sample === "all");
+  const items = [["G1", "1m return"], ["G1", "3m return"], ["G1", "6m return"], ["G1", "12m return"], ["G1", "3m max drawdown"], ["G2", "3m return"], ["G2", "12m return"],
+    ["G2", "3m max drawdown"], ["Fragility", "3m max drawdown"], ["CNN replica", "3m return"], ["G3", "3m return"], ["G4", "3m max drawdown"]].map(([s, t]) => get(s, t)).filter(Boolean);
+  const ev = Object.entries(D.events.correlation || {}).map(([k, c]) => ({ label: `${k.startsWith("ai") ? "G3" : "G1"} on named ${k.split("_")[0]} events → next ${k.split("_")[1]}`, n: c.n, pearson: c.pearson }));
+  const ep = Object.entries(D.zones.G1.correlation || {}).map(([k, c]) => ({ label: `G1 at each extreme episode's start → next ${k}`, n: c.n, pearson: c.pearson }));
+  const X = (v) => `${(Math.max(-0.6, Math.min(0.6, v)) + 0.6) / 1.2 * 100}%`;
+  const line = (label, sub, r, ci) => `<div class="lbl">${esc(label)}<small>${esc(sub)}</small></div>
+    <div class="axis"><span class="zero"></span>${ci ? `<span class="ci" style="left:${X(ci[0])};width:calc(${X(ci[1])} - ${X(ci[0])})"></span>` : ""}${isNum(r) ? `<span class="pt" style="left:${X(r)}"></span>` : ""}</div>
+    <div class="num r" style="text-align:right">${num(r, 3)}</div>`;
+  const asset = (a) => a === "SMH" ? "SMH" : "S&P 500";
+  document.getElementById("forest").innerHTML = `<div class="forest">
+    <div></div><div class="scale"><span>−0.6</span><span>−0.3</span><span>0</span><span>+0.3</span><span>+0.6</span></div><div></div>
+    ${items.map((r) => line(`${r.signal} → next ${r.target} (${asset(r.asset)})`, `${r.n.toLocaleString()} days · CI ${num(r.pearson_ci[0], 2)} to ${num(r.pearson_ci[1], 2)}`, r.pearson, r.pearson_ci)).join("")}
+    ${[...ev, ...ep].map((r) => line(r.label, `n = ${r.n} (no interval: too few points)`, r.pearson, null)).join("")}</div>`;
+  document.getElementById("corrtable").innerHTML = table(["Signal", "Target", "Sample", H("Days"), H("Pearson r"), H("95% CI"), H("Spearman ρ"), H("Indep. windows"), H("t")],
+    rows.map((r) => `<tr><td>${r.signal}</td><td>${r.target} (${asset(r.asset)})</td><td>${r.sample}</td><td class="r num">${r.n.toLocaleString()}</td><td class="r num">${num(r.pearson, 3)}</td>
+      <td class="r num">${num(r.pearson_ci[0], 2)} to ${num(r.pearson_ci[1], 2)}</td><td class="r num">${num(r.spearman, 3)}</td><td class="r num">${r.n_indep}</td><td class="r num">${num(r.t_indep, 1)}</td></tr>`));
+}
+
+/* ---------------------------------------------------------- scenarios */
+function heat(v, m = 20) {
+  if (!isNum(v)) return "transparent";
+  const t = Math.max(-1, Math.min(1, v / m));
+  return `color-mix(in srgb, ${t >= 0 ? css("--up") : css("--down")} ${Math.round(Math.abs(t) * 55)}%, ${css("--surface")})`;
+}
+function renderScenarios() {
+  const g = D.scenarios.grid, now = g.now;
+  document.getElementById("grid-sub").textContent = `Mean S&P 500 return over the next 12 months (3 months below) on reliable days. Outlined: today's cell. Blank: fewer than 60 days.`;
+  const rows = g.g1_scale.map((n1, i) => `<tr><th>G1 ${esc(n1)}</th>${g.g2_scale.map((n2, j) => {
+    const c = g.cells.find((x) => x.g1 === i && x.g2 === j);
+    const isNow = now[0] === i && now[1] === j;
+    if (!c || c.days < 60) return `<td class="cell${isNow ? " now" : ""}">—</td>`;
+    return `<td class="cell${isNow ? " now" : ""}" style="background:${heat(c.ret_12m)}" title="${c.days} days">${pct(c.ret_12m)}<small>${pct(c.ret_3m)} · ${c.days}d</small></td>`;
+  }).join("")}</tr>`);
+  document.getElementById("bandgrid").innerHTML = `<table><thead><tr><th></th>${g.g2_scale.map((s) => `<th class="cell">G2 ${esc(s)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  const an = D.scenarios.analogs, n = an.now;
+  document.getElementById("an-sub").textContent = `Today: G1 ${num(n.G1, 1)} (${n.g1_band}), G2 ${num(n.G2, 1)} (${n.g2_band}), fragility ${num(n.fragility, 1)}. The ${an.k} closest reliable days on those readings, a month or more apart. 10%+ drawdown within 3 months: ${num(an.dd10_analogs, 0)}% of analogs vs ${num(an.dd10_all, 0)}% of all days.`;
+  document.getElementById("analogs").innerHTML = table(["S&P 500 next", H("Analogs mean"), H("Median"), H("10th"), H("90th"), H("% up"), H("All days mean"), H("% up")],
+    Object.entries(an.summary).map(([h, v]) => `<tr><td>${h}</td>${td(v.analogs.mean)}${td(v.analogs.median)}${td(v.analogs.p10)}${td(v.analogs.p90)}<td class="r num">${num(v.analogs.hit, 0)}%</td>${td(v.all.mean)}<td class="r num">${num(v.all.hit, 0)}%</td></tr>`));
+  document.getElementById("analog-list").innerHTML = table(["Date", H("G1"), H("G2"), H("Fragility"), H("Next 3m"), H("Next 12m"), H("Worst DD 3m")],
+    an.rows.map((r) => `<tr><td>${dateLbl(r.date)}</td><td class="r num">${num(r.G1, 0)}</td><td class="r num">${num(r.G2, 0)}</td><td class="r num">${num(r.fragility, 0)}</td>${td(r.ret_3m)}${td(r.ret_12m)}${td(r.mdd3m)}</tr>`));
+  const keys = ["bh", ...D.strategies.filter((s) => s.asset === "SPY").map((s) => s.key)];
+  document.getElementById("stress").innerHTML = table(["Window", H("Fall"), ...keys.map((k) => H(NAMES[k]))],
+    D.scenarios.stress.map((r) => `<tr><td>${r.type} ${dateLbl(r.start)} → ${dateLbl(r.end)}</td>${td(r.depth)}${keys.map((k) => isNum(r[k + "_ret"])
+      ? `<td class="r num ${cls(r[k + "_ret"] - r.bh_ret)}">${pct(r[k + "_ret"])}<small>DD ${pct(r[k + "_dd"])} · next 12m ${pct(r[k + "_next12m"])}</small></td>` : "<td class='r'>—</td>").join("")}</tr>`));
+}
+
+/* -------------------------------------------------------- Monte Carlo */
+function renderMonteCarlo() {
+  const fans = D.monte_carlo.fans, cond = fans[FAN === "spy" ? "spy_g1" : "smh_g3"], unc = fans[FAN === "spy" ? "spy_all" : "smh_all"];
+  if (!cond || !cond.months) { document.getElementById("fan").innerHTML = "<p class='note'>Not enough history.</p>"; return; }
+  document.getElementById("fan-sub").textContent = `${cond.paths.toLocaleString()} paths of twelve 1-month blocks of real ${cond.asset} history, each starting from a day in the band the path is in (start: ${cond.gauge} ${cond.state}). Dashed: unconditional.`;
+  const m = [0, ...cond.months.map((x) => x.month)], pick = (f, k) => [0, ...f.months.map((x) => x[k])];
+  const c = chart("fan");
+  const band = (lo, hi, name, op) => [
+    { name: name + " lo", type: "line", data: pick(cond, lo), stack: name, lineStyle: { opacity: 0 }, showSymbol: false, silent: true },
+    { name, type: "line", data: pick(cond, hi).map((v, i) => v - pick(cond, lo)[i]), stack: name, lineStyle: { opacity: 0 }, showSymbol: false, areaStyle: { color: css("--accent"), opacity: op }, itemStyle: { color: css("--accent"), opacity: op * 3 }, silent: true },
+  ];
+  c.setOption({
+    animation: false, legend: { top: 0, data: ["5th–95th", "25th–75th", "Median", "Unconditional median", "Unconditional 5th / 95th"], textStyle: { color: css("--muted") } },
+    tooltip: { trigger: "axis", ...tooltipStyle(), formatter: (ps) => { const i = ps[0].dataIndex; return `Month ${m[i]}<br>Median ${pct(pick(cond, "p50")[i])} (unconditional ${pct(pick(unc, "p50")[i])})<br>5th–95th ${pct(pick(cond, "p5")[i])} to ${pct(pick(cond, "p95")[i])}`; } },
+    grid: { left: 44, right: 12, top: 34, bottom: 26 }, xAxis: { type: "category", data: m, boundaryGap: false, ...axisStyle(), name: "months", nameGap: 4 },
+    yAxis: { type: "value", ...axisStyle(), axisLabel: { color: css("--muted"), formatter: (v) => v + "%" } },
+    series: [...band("p5", "p95", "5th–95th", 0.13), ...band("p25", "p75", "25th–75th", 0.22),
+      { name: "Median", type: "line", data: pick(cond, "p50"), showSymbol: false, lineStyle: { width: 2, color: css("--accent") }, itemStyle: { color: css("--accent") } },
+      { name: "Unconditional median", type: "line", data: pick(unc, "p50"), showSymbol: false, lineStyle: { width: 1.3, type: "dashed", color: css("--muted") }, itemStyle: { color: css("--muted") } },
+      { name: "Unconditional 5th / 95th", type: "line", data: pick(unc, "p5"), showSymbol: false, lineStyle: { width: 1, type: "dotted", color: css("--faint") }, itemStyle: { color: css("--faint") } },
+      { name: "Unconditional 5th / 95th", type: "line", data: pick(unc, "p95"), showSymbol: false, lineStyle: { width: 1, type: "dotted", color: css("--faint") }, itemStyle: { color: css("--faint") } }],
+  });
+  const row = (f, label) => `<tr><td>${label}</td>${td(f.final.p5)}${td(f.final.p50)}${td(f.final.p95)}<td class="r num">${num(f.p_loss, 0)}%</td><td class="r num">${num(f.p_dd10, 0)}%</td><td class="r num">${num(f.p_dd20, 0)}%</td></tr>`;
+  document.getElementById("fantable").innerHTML = table(["12 months", H("5th"), H("Median"), H("95th"), H("P(loss)"), H("P(10%+ DD)"), H("P(20%+ DD)")],
+    [row(cond, `From ${cond.gauge} ${cond.state}`), row(unc, "Unconditional")]);
+  const ms = D.monte_carlo.strategies;
+  document.getElementById("mc-sub").textContent = `${ms.paths.toLocaleString()} stationary block-bootstrap paths (mean block ${ms.block} days) of ${ms.years} years; strategy and buy-and-hold see the same resampled days.`;
+  document.getElementById("mcstrat").innerHTML = table(["Strategy", H("CAGR median"), H("5th–95th"), H("Max DD median"), H("P(beats B&H CAGR)"), H("P(beats B&H Sharpe)"), H("P(shallower DD)")],
+    ms.rows.map((r) => `<tr><td>${NAMES[r.key] || r.key}</td><td class="r num">${num(r.cagr.p50, 1)}%</td><td class="r num">${num(r.cagr.p5, 1)} to ${num(r.cagr.p95, 1)}%</td>
+      <td class="r num">${num(r.mdd.p50, 1)}%</td><td class="r num">${isNum(r.p_beat_cagr) ? num(r.p_beat_cagr, 0) + "%" : "—"}</td><td class="r num">${isNum(r.p_beat_sharpe) ? num(r.p_beat_sharpe, 0) + "%" : "—"}</td>
+      <td class="r num">${isNum(r.p_shallower_dd) ? num(r.p_shallower_dd, 0) + "%" : "—"}</td></tr>`));
+}
+
+function renderFooter() {
+  document.getElementById("footer").innerHTML = `<p>Generated by <code>make robustness</code> · seed ${D.seed} · ${D.reps.toLocaleString()} bootstrap draws · ${D.paths.toLocaleString()} strategy paths. Event and episode returns are S&amp;P 500 price returns; strategies use SPY total return. Event dates are from the public record; peaks and troughs are checked against closes.</p>
+    <p>Not investment advice. Past readings, in-sample choices and a hindsight AI basket all flatter backtests.</p>`;
+}
+
+function drawAll() {
+  renderTimeline(); renderEpisodes(); renderStrategies(); renderRobustness(); renderMonteCarlo();
+}
+(async function main() {
+  try { D = await load("robustness.json"); }
+  catch (e) { document.getElementById("main").innerHTML = `<div class="err">${esc(e.message)}. Run <code>make robustness</code> to build data/robustness.json.</div>`; document.getElementById("meta").textContent = ""; return; }
+  renderHeader(); renderCycles(); renderEvents(); renderCorrelations(); renderScenarios(); renderFooter(); drawAll();
+  document.querySelectorAll("[data-tl]").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("[data-tl]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    TL = b.dataset.tl; renderTimeline();
+  }));
+  document.getElementById("ev-filter").addEventListener("change", renderEvents);
+  document.getElementById("st-pick").addEventListener("change", renderStrategies);
+  document.getElementById("fan-pick").addEventListener("change", (e) => { FAN = e.target.value; renderMonteCarlo(); });
+  let t; window.addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => Object.values(CHARTS).forEach((c) => c.resize()), 150); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { drawAll(); renderCycles(); renderEvents(); renderScenarios(); renderCorrelations(); });
+})();
+</script>
+</body>
+</html>

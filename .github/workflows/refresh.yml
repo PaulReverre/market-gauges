@@ -101,6 +101,9 @@ jobs:
           cp -r dashboard _site/
           cp data/latest.json data/history.json _site/data/
           cp reports/validation.md _site/reports/
+          # The robustness study is run by hand (make robustness); ship it when present.
+          if [ -f data/robustness.json ]; then cp data/robustness.json _site/data/; fi
+          if [ -f reports/robustness.md ]; then cp reports/robustness.md _site/reports/; fi
           printf '<!doctype html><meta http-equiv="refresh" content="0; url=dashboard/"><a href="dashboard/">Market Gauges</a>\n' > _site/index.html
       - uses: actions/upload-pages-artifact@v5
         with:

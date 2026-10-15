@@ -73,6 +73,7 @@ that source report `missing_key`; everything else still runs.
 | `render` | Write `data/latest.json` and `data/history.json` |
 | `refresh` | `ingest` + `score` + `render` |
 | `backtest` | Phase 3 validation; applies demotions to `config/indicators.yaml`, writes `reports/validation.md` |
+| `robustness` | Event, episode, strategy and Monte Carlo study of the scored history → `reports/robustness.md` |
 | `restore` | Rebuild the store from `data/archive` (refuses if the store already has rows) |
 | `sync` | `git pull --ff-only`, then rebuild the store from `data/archive` (replacing its contents) |
 | `serve` | Static server for the dashboard |
@@ -90,7 +91,18 @@ src/gauges/sources/*    one client per source  ->  ingest.py  ->  store.py (Duck
                                                                  archive.py (parquet per run, committed)
 features.py (as-known daily values) -> score.py (gauges, overlays) -> render.py (JSON) -> dashboard/index.html
 backtest.py (Section 8 validation, gates composite membership)
+robustness.py (cycles, events, fear/greed episodes, strategies, Monte Carlo) -> reports/robustness.md,
+              data/robustness.json -> dashboard/backtest.html
 ```
+
+`make robustness` replays the scored history through every bull and bear market,
+correction and named event since 2000 (dates in `config/market_events.yaml`;
+peaks and troughs are checked against the closes). It measures returns after
+Extreme Fear and Extreme Greed against random entry dates, stress-tests simple
+gauge-driven rules (parameter grids, sub-periods, execution delay, costs,
+leave-one-pillar-out, a circular-shift placebo), reports correlation
+coefficients with block-bootstrap intervals, and runs Monte Carlo resamples. It
+runs by hand, not in CI; the dashboard's **Backtest** tab draws the result.
 
 The DuckDB file is git-ignored. Each ingest run writes the rows it added to
 `data/archive/<table>/<run_id>.parquet` (never rewritten), so history survives

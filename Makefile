@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup probe ingest score render refresh backtest restore sync serve test
+.PHONY: setup probe ingest score render refresh backtest robustness restore sync serve test
 
 setup:
 	python3.11 -m venv .venv
@@ -34,6 +34,10 @@ sync:
 
 backtest:
 	$(PY) -m gauges.backtest --apply
+
+# Event, episode, strategy and Monte Carlo study of the scored history (run `make score` first).
+robustness:
+	$(PY) -m gauges.robustness
 
 test:
 	$(PY) -m pytest

@@ -100,6 +100,16 @@ release, the 10-Q/10-K (EDGAR) and the call transcript, and check:
 Output the proposed `events.yaml` entries (same format as log-event) with
 sources, and wait for approval before writing any of them.
 
+## robustness
+
+1. If the store changed since the last score, run `make score`. Then run
+   `make robustness` (about a minute).
+2. Report from `reports/robustness.md` only: the Scorecard rows, the section 9
+   correlation coefficients, and the caveats (thin coverage before 2007,
+   indicators pruned on the same history, hindsight in the AI basket).
+3. Describe strategies as tests of the gauges, never as recommendations. Point
+   the user to the dashboard's Backtest tab for the charts.
+
 ## validate
 
 1. Run `make test`. Stop and report failures if any.
