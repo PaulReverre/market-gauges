@@ -46,6 +46,7 @@ SOURCE_PAGES = {
     "openrouter": "https://openrouter.ai/rankings",
     "gpuperhour": "https://gpuperhour.com/gpu-price-index",
     "uvik": "https://uvik.net/blog/gpu-price-index/",
+    "nebius": "https://nebius.com/spot-prices",
     "wikimedia": "https://pageviews.wmcloud.org/?project=en.wikipedia.org&pages={series}",
     "gdelt": "https://api.gdeltproject.org/api/v2/doc/doc",
     "eia": "https://www.eia.gov/electricity/data/browser/",
@@ -55,7 +56,7 @@ SOURCE_NAMES = {
     "cboe": "Cboe", "finra": "FINRA", "factset": "FactSet", "shiller": "Shiller", "tsmc": "TSMC IR", "mops": "TWSE MOPS",
     "aaii": "AAII", "naaim": "NAAIM", "cftc": "CFTC", "btos": "Census BTOS", "openrouter": "OpenRouter",
     "gpuperhour": "GPUPerHour", "uvik": "Uvik", "wikimedia": "Wikipedia pageviews", "gdelt": "GDELT", "eia": "EIA",
-    "treasury": "US Treasury",
+    "treasury": "US Treasury", "nebius": "Nebius",
 }
 PANEL_SOURCES = {   # panel -> (label, url)
     "net_highs_lows": ("Yahoo prices, SPY members (SSGA)", "https://www.ssga.com/us/en/intermediary/etfs/spdr-sp-500-etf-trust-spy"),
@@ -80,6 +81,7 @@ PANEL_SOURCES = {   # panel -> (label, url)
     "xbrl_aggregate": ("SEC EDGAR XBRL company facts", "https://www.sec.gov/edgar/search/"),
     "token_growth": ("OpenRouter rankings (CC BY 4.0)", "https://openrouter.ai/rankings"),
     "token_price_index": ("OpenRouter model catalog", "https://openrouter.ai/models"),
+    "gpu_spot_index": ("Nebius spot prices (pre-emptible VMs)", "https://nebius.com/spot-prices"),
     "revenue_proxy": ("OpenRouter rankings and model catalog", "https://openrouter.ai/rankings"),
 }
 

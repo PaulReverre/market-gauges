@@ -38,7 +38,7 @@ gauges:
     name: AI Sector Sentiment & Volatility
     scale: [Extreme Fear, Fear, Neutral, Greed, Euphoria]
     smoothing: ema3
-    pillars: {trend_rs: 30, implied_vol: 30, crowding: 25, attention: 15}
+    pillars: {trend_rs: 30, implied_vol: 30, crowding: 25, attention: 15, compute_demand: 10}
   G4:
     name: AI Fundamental Health
     scale: [Breaking down, Weakening, Stable, Strong, Very strong]
@@ -834,6 +834,24 @@ indicators:
     lookback_pct: all
     role: coincident
     notes: Sparse and frequently rate-limited; low weight.
+  # ------------------------------------------------------- compute_demand
+  - id: ai_gpu_spot
+    gauge: G3
+    pillar: compute_demand
+    name: Nebius GPU spot price index (B300, B200, H200, H100, RTX PRO 6000; all regions), 7-day mean
+    kind: panel
+    panel: gpu_spot_index
+    targs: {window: 7}
+    direction: higher_is_greed
+    weight: 3
+    expected_freq: 1d
+    lookback_pct: all
+    role: coincident
+    notes: >-
+      Nebius pre-emptible VM spot prices move with demand for spare capacity every 15 minutes,
+      between a published floor and the on-demand rate. Rising = compute demand tightening (greed);
+      sliding to the floor = slack (fear). One provider; history from 2026-10-08 (dynamic pricing
+      start), so it enters the gauge once 126 trading days are known (about April 2027).
 
   # ======================================================================
   # G4 AI Fundamental Health

@@ -103,6 +103,13 @@ def test_mcclellan_summation():
     assert np.isnan(out.iloc[0]) and out.iloc[1] == pytest.approx(0.0) and out.iloc[2] == pytest.approx(25.0)
 
 
+def test_chain_index_ignores_columns_entering_and_leaving():
+    prices = pd.DataFrame({"a": [1.0, 2.0, 2.0], "b": [np.nan, 4.0, 8.0], "c": [1.0, 1.0, np.nan]}, index=IDX[:3])
+    # step 1: a doubles, c flat, b has no prior price -> mean log change ln2/2; step 2: a flat, b doubles
+    assert T.chain_index(prices).tolist() == pytest.approx([100.0, 100 * math.sqrt(2), 200.0])
+    assert T.chain_index(pd.DataFrame()).empty
+
+
 def test_basket_index_converts_krw_and_renormalizes():
     closes = pd.DataFrame({"US": [100, 110.0, 110.0], "KR": [1000, 1000.0, 1100.0]}, index=IDX[:3])
     fx = pd.Series([1000, 1100.0, 1100.0], index=IDX[:3])          # KRW per USD

@@ -60,6 +60,8 @@ fetch:
     start: 2015-07-01
   eia:
     states: [US, VA, TX, GA, AZ, OR, OH, IA, IL]
+  nebius:
+    start: 2026-10-08     # pre-emptible prices were fixed before this date, not market-driven
   treasury:
     start_year: 2024
 
@@ -155,6 +157,7 @@ specs:
   - {match: "mops:*",              freq: 1mo, lag_days: 41, bounds: [0, 5000000000]}
   - {match: "uvik:*",              freq: 1mo, bounds: [0.05, 200]}
   - {match: "gpuperhour:*",        freq: 1d,  bounds: [0.01, 200]}
+  - {match: "nebius:*",            freq: 1d,  lag_days: 1, bounds: [0.01, 200]}
   - {match: "openrouter:*",        freq: 1d,  bounds: [0, 10000000000000000]}
   - {match: "cftc:*",              freq: 1w,  bounds: [-100000000, 100000000]}
   - {match: "btos:*",              freq: 2w,  bounds: [0, 100]}

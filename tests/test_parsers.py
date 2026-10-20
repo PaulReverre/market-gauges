@@ -142,6 +142,21 @@ def test_gpu_index_csvs():
     assert {o.series: o.value for o in gph} == {"h100-nvl.min": 2.79, "h100-nvl.median": 3.11, "h100-nvl.max": 4.5}
 
 
+def test_nebius_daily_mean_by_utc_hour_start_within_dynamic_pricing():
+    def series(platform, region, points):
+        return {"computeInstance": {"platform": platform}, "region": region,
+                "points": [{"timestamp": t, "value": v} for t, v in points]}
+    payload = {"items": [
+        series("gpu-h100-sxm", "eu-north1", [("2026-10-08T00:00:00Z", "2.15"),   # hour 23:00 Oct 7: fixed-price era
+                                              ("2026-10-08T01:00:00Z", "1.0"), ("2026-10-09T00:00:00Z", "2.0"),
+                                              ("2026-10-09T01:00:00Z", "9.0")]),  # Oct 9 = today, incomplete
+        series("gpu-b300-sxm", "us-north1", [("2026-10-08T12:00:00Z", "4.5")]),
+    ]}
+    rows = gpu_index.parse_nebius(payload, start=date(2026, 10, 8), before=date(2026, 10, 9))
+    assert [(o.series, o.obs_date, o.value) for o in rows] == [
+        ("gpu-h100-sxm.eu-north1", date(2026, 10, 8), 1.5), ("gpu-b300-sxm.us-north1", date(2026, 10, 8), 4.5)]
+
+
 def test_gdelt_averages_per_day_and_drops_today():
     payload = {"timeline": [{"data": [{"date": "20261014T060000Z", "value": -2.0}, {"date": "20261014T120000Z", "value": 1.0},
                                       {"date": "20261015T100000Z", "value": 3.0}]}]}

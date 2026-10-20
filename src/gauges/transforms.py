@@ -217,6 +217,18 @@ def basket_index(returns: pd.DataFrame, layers: dict[str, tuple[float, list[str]
     return (1 + daily).cumprod()
 
 
+def chain_index(prices: pd.DataFrame, base: float = 100.0) -> pd.Series:
+    """Chain-linked equal-weight geometric price index over dated rows.
+
+    Each step is the mean log change across columns priced on both rows, so a
+    column that starts or stops mid-sample does not move the level.
+    """
+    if prices.empty:
+        return pd.Series(dtype=float)
+    step = np.log(prices.where(prices > 0)).diff().mean(axis=1, skipna=True)
+    return base * np.exp(step.fillna(0).cumsum())
+
+
 def event_window_mean(events: pd.DataFrame, calendar: pd.DatetimeIndex, days: int, min_events: int) -> pd.Series:
     """Mean of event values (columns date, value) over a trailing calendar-day window, on each calendar date.
 

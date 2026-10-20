@@ -108,6 +108,10 @@ class EiaFetch(Strict):
     states: list[str]
 
 
+class NebiusFetch(Strict):
+    start: date
+
+
 class TreasuryFetch(Strict):
     start_year: int
 
@@ -128,6 +132,7 @@ class FetchConfig(Strict):
     gdelt: GdeltFetch
     wikimedia: WikimediaFetch
     eia: EiaFetch
+    nebius: NebiusFetch
     treasury: TreasuryFetch
 
 

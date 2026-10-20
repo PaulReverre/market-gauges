@@ -28,6 +28,7 @@ SOURCES: dict[str, Callable[[Context], FetchResult]] = {
     "mops": mops.fetch,
     "uvik": gpu_index.fetch_uvik,
     "gpuperhour": gpu_index.fetch_gpuperhour,
+    "nebius": gpu_index.fetch_nebius,
     "gdelt": gdelt.fetch,
     "wikimedia": wikimedia.fetch,
     "eia": eia.fetch,

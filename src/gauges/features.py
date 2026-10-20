@@ -546,6 +546,17 @@ class Features:
             """).df()
         return pd.Series(df["share"].to_numpy(), index=pd.to_datetime(df["obs_date"]))
 
+    # ----------------------------------------------------------------- Nebius
+    def panel_gpu_spot_index(self, window: int) -> pd.DataFrame:
+        """Nebius spot price index across GPU platforms and regions, trailing mean of `window` days.
+
+        A UTC day's average is complete at 8pm ET, so it counts from the next day.
+        """
+        names = [r[0] for r in self.con.execute(
+            "SELECT DISTINCT series FROM raw_observations WHERE source = 'nebius'").fetchall()]
+        index = T.chain_index(self.latest_many("nebius", names))
+        return self._daily(T.rolling_mean(index, window), lag_days=1)
+
     # ----------------------------------------------------------------- events
     def event_scores(self, ind: Indicator) -> pd.DataFrame:
         """Score (0-100) and status multiplier from events.yaml, as known on each day."""
