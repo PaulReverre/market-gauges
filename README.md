@@ -177,5 +177,5 @@ feed; GDELT rate-limits heavily; AI fundamentals move in steps around earnings.
 G2 runs below 70% coverage since the October 2026 backtest demoted FactSet
 growth, beats, forward P/E and the ERP. What remains of its earnings and
 valuation pillars is mostly indicators with no free source (forward revenue,
-margins) or too little history (top-10 concentration). The needle shows "low
+margins) or too little history (top-10 concentration). Its tile shows "low
 coverage" until those fill in.

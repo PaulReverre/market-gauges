@@ -5,44 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gauge Backtest</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 22a12 12 0 0 1 24 0' fill='none' stroke='%232f5bd3' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M16 22l6-8' stroke='%2314171c' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>
+  try { const t = localStorage.getItem("mg-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) { /* storage blocked */ }
+</script>
 <style>
 :root {
-  --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f0f2f5; --text: #14171c; --muted: #5d6676; --faint: #8b93a1;
-  --border: #e2e5ea; --accent: #2f5bd3;
-  --b1: #c2410c; --b2: #e8930c; --b3: #a1a7b3; --b4: #3aa6dd; --b5: #0b5f99;
-  --up: #0b5f99; --down: #c2410c; --red: #d93025; --amber: #e8930c; --green: #188038;
-  --shade: rgba(194, 65, 12, .08); --shade-2: rgba(194, 65, 12, .04);
-  --shadow: 0 1px 2px rgba(16,24,40,.06); --radius: 10px;
+  color-scheme: light;
+  --bg: #f9f9f7; --surface: #fcfcfb; --surface-2: #f1f0ec; --text: #0b0b0b; --muted: #52514e; --faint: #898781;
+  --border: #e1e0d9; --accent: #2a78d6;
+  --b1: #c9403e; --b2: #ee9a92; --b3: #bdbbb2; --b4: #86b6ef; --b5: #256abf;
+  --up: #256abf; --down: #c9403e; --red: #d03b3b; --amber: #fab219; --green: #0ca30c;
+  --shade: rgba(201, 64, 62, .08); --shade-2: rgba(201, 64, 62, .04);
+  --shadow: none; --radius: 12px;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1014; --surface: #161920; --surface-2: #1d2129; --text: #e8ebf0; --muted: #a0a8b6; --faint: #6f7786;
-    --border: #2a2f39; --accent: #7aa2ff;
-    --b1: #e2622a; --b2: #f0a63a; --b3: #6c7381; --b4: #4cb6ea; --b5: #2f8fd0;
-    --up: #4cb6ea; --down: #f07a47; --red: #f0605a; --amber: #f0a63a; --green: #3fb764;
-    --shade: rgba(240, 122, 71, .13); --shade-2: rgba(240, 122, 71, .06);
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d; --surface: #1a1a19; --surface-2: #242422; --text: #f0efec; --muted: #c3c2b7; --faint: #898781;
+    --border: #2c2c2a; --accent: #3987e5;
+    --b1: #ee6b67; --b2: #8f3f3c; --b3: #4a4945; --b4: #1c5cab; --b5: #6da7ec;
+    --up: #6da7ec; --down: #ee6b67; --red: #d03b3b; --amber: #fab219; --green: #0ca30c;
+    --shade: rgba(238, 107, 103, .12); --shade-2: rgba(238, 107, 103, .06);
     --shadow: none;
   }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d; --surface: #1a1a19; --surface-2: #242422; --text: #f0efec; --muted: #c3c2b7; --faint: #898781;
+  --border: #2c2c2a; --accent: #3987e5;
+  --b1: #ee6b67; --b2: #8f3f3c; --b3: #4a4945; --b4: #1c5cab; --b5: #6da7ec;
+  --up: #6da7ec; --down: #ee6b67; --red: #d03b3b; --amber: #fab219; --green: #0ca30c;
+  --shade: rgba(238, 107, 103, .12); --shade-2: rgba(238, 107, 103, .06);
+  --shadow: none;
+}
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 .num { font-variant-numeric: tabular-nums; }
 .wrap { max-width: 1320px; margin: 0 auto; padding: 0 16px; }
-header.top { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+header.top { background: var(--bg); border-bottom: 1px solid var(--border); }
 header .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 16px; max-width: 1320px; margin: 0 auto; }
-.brand h1 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
+.brand h1 { font-size: 15px; margin: 0; letter-spacing: -.01em; font-weight: 650; }
 .brand span { color: var(--muted); font-size: 12px; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.tabs a, .tabs button { font: inherit; background: none; border: 1px solid transparent; color: var(--muted); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.tabs a, .tabs button { font: inherit; font-size: 13.5px; background: none; border: 0; color: var(--muted); padding: 4px 10px; border-radius: 6px; cursor: pointer; }
 .tabs a:hover { text-decoration: none; color: var(--text); }
-.tabs [aria-current="page"], .tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.tabs [aria-current="page"], .tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--text); font-weight: 550; }
 .meta { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--muted); font-size: 12px; }
 .meta b { color: var(--text); font-weight: 600; }
 main { padding: 16px 0 40px; }
-.row-title { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; font-weight: 600; }
+.row-title { font-size: 16px; color: var(--text); margin: 36px 0 12px; font-weight: 650; letter-spacing: -.01em; }
 .lede { color: var(--muted); max-width: 900px; margin: 0 0 12px; font-size: 13px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; }
 .card h3 { font-size: 14px; margin: 0 0 2px; }
@@ -64,7 +78,7 @@ main { padding: 16px 0 40px; }
 .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
 table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 th, td { text-align: left; padding: 6px 9px; border-top: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
-th { color: var(--muted); font-weight: 600; font-size: 11.5px; background: var(--surface-2); position: sticky; top: 0; }
+th { color: var(--faint); font-weight: 550; font-size: 12px; background: var(--surface); position: sticky; top: 0; border-top: 0; border-bottom: 1px solid var(--border); }
 td.r, th.r { text-align: right; }
 td.wrapc { white-space: normal; min-width: 200px; }
 td.pos { color: var(--up); } td.neg { color: var(--down); }
@@ -73,7 +87,8 @@ td small { color: var(--faint); display: block; font-size: 11px; }
 .hit.yes { color: var(--green); } .hit.partial { color: var(--amber); } .hit.no { color: var(--red); }
 .tag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted); }
 .tag.low { color: var(--down); border-color: color-mix(in srgb, var(--down) 45%, var(--border)); }
-.chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 6px; color: #fff; font-weight: 600; }
+.chip { display: inline-block; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; }
 details.more { margin-top: 10px; }
 details.more > summary { cursor: pointer; color: var(--accent); font-size: 12.5px; }
 select { font: inherit; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
@@ -98,9 +113,10 @@ footer { color: var(--muted); font-size: 11.5px; padding: 20px 0 40px; border-to
 <body>
 <header class="top">
   <div class="bar">
-    <div class="brand"><h1>Market Gauges</h1><span>Backtest and robustness study</span></div>
+    <div class="brand"><h1>Market Gauges</h1></div>
     <nav class="tabs">
-      <a href="index.html">Dashboard</a>
+      <a href="index.html">Overview</a>
+      <a href="index.html#method">Methodology</a>
       <a href="backtest.html" aria-current="page">Backtest</a>
     </nav>
     <div class="meta" id="meta">Loading…</div>
@@ -230,7 +246,7 @@ function chart(id) {
   return CHARTS[id];
 }
 const axisStyle = () => ({ axisLine: { lineStyle: { color: css("--border") } }, axisLabel: { color: css("--muted"), fontSize: 11 },
-  splitLine: { lineStyle: { color: css("--border"), type: "dashed" } } });
+  splitLine: { lineStyle: { color: css("--border") } } });
 const tooltipStyle = () => ({ backgroundColor: css("--surface"), borderColor: css("--border"), textStyle: { color: css("--text"), fontSize: 12 } });
 const table = (head, rows) => `<table><thead><tr>${head.map((h) => `<th class="${h.r ? "r" : ""}">${h.t ?? h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
 const H = (t, r = true) => ({ t, r });
@@ -292,13 +308,13 @@ function renderCycles() {
   document.getElementById("declines").innerHTML = table(
     ["Type", "Peak → low", H("Fall"), H("G1 low"), H("Lead (days)"), "First Extreme Fear", H("Further fall"), H("12m after fear"), H("12m after low"), H("Cov %")],
     rows.map((c) => `<tr><td>${c.type}</td><td>${dateLbl(c.start)} → ${dateLbl(c.end)}${c.ongoing ? " <span class='tag'>so far</span>" : ""}</td>${td(c.change)}
-      <td class="r num" style="color:${bandColor(c.g1_low)}">${num(c.g1_low, 0)}</td><td class="r num">${c.g1_low_lead == null ? "—" : sgn(c.g1_low_lead, 0)}</td>
+      <td class="r num"><span class="sw" style="background:${bandColor(c.g1_low)}"></span>${num(c.g1_low, 0)}</td><td class="r num">${c.g1_low_lead == null ? "—" : sgn(c.g1_low_lead, 0)}</td>
       <td>${dateLbl(c.first_fear)}</td>${td(c.further_fall)}${td(c.fear_12m)}${td(c.trough_12m)}
       <td class="r num">${isNum(c.g1_cov) ? num(c.g1_cov, 0) + (c.g1_cov < 50 ? " <span class='tag low'>low</span>" : "") : "—"}</td></tr>`));
   document.getElementById("bulls").innerHTML = table(
     ["Low → peak", H("Gain"), H("G1 max"), H("% days Greed+"), "First Extreme Greed", H("Gain after it"), H("G1 at peak"), H("Fragility at peak")],
     D.cycles.bulls.map((c) => `<tr><td>${dateLbl(c.start)} → ${dateLbl(c.end)}${c.ongoing ? " <span class='tag'>so far</span>" : ""}</td>${td(c.change)}
-      <td class="r num" style="color:${bandColor(c.g1_max)}">${num(c.g1_max, 0)}</td><td class="r num">${num(c.greed_share, 0)}</td><td>${dateLbl(c.first_greed)}</td>
+      <td class="r num"><span class="sw" style="background:${bandColor(c.g1_max)}"></span>${num(c.g1_max, 0)}</td><td class="r num">${num(c.greed_share, 0)}</td><td>${dateLbl(c.first_greed)}</td>
       ${td(c.gain_after_greed)}<td class="r num">${num(c.g1_end, 0)}</td><td class="r num">${num(c.frag_end, 0)}</td></tr>`));
 }
 
@@ -346,7 +362,7 @@ function renderEpisodes() {
   const list = [...z.fear.episodes.map((e) => ({ ...e, zone: "Fear" })), ...z.greed.episodes.map((e) => ({ ...e, zone: "Greed" }))].sort((a, b) => a.start.localeCompare(b.start));
   document.getElementById("ep-list").innerHTML = table(["Zone", "Start", "Extreme", "Exit", H("Days"), H("Extreme"), H("3m from start"), H("12m from start"), H("12m from exit"), H("Worst DD 3m")],
     list.map((e) => `<tr><td>${e.zone}</td><td>${dateLbl(e.start)}</td><td>${dateLbl(e.extreme)}</td><td>${dateLbl(e.exit)}</td><td class="r num">${e.days}</td>
-      <td class="r num" style="color:${bandColor(e.extreme_value)}">${num(e.extreme_value, 0)}</td>${td(e.start_3m)}${td(e.start_12m)}${td(e.exit_12m)}${td(e.mdd3m)}</tr>`));
+      <td class="r num"><span class="sw" style="background:${bandColor(e.extreme_value)}"></span>${num(e.extreme_value, 0)}</td>${td(e.start_3m)}${td(e.start_12m)}${td(e.exit_12m)}${td(e.mdd3m)}</tr>`));
   document.getElementById("thresholds").innerHTML = table(["Zone", H("Threshold"), H("Episodes"), H("Excess 3m (pts)"), H("p"), H("Excess 12m (pts)"), H("p")],
     D.thresholds.map((t) => `<tr><td>${t.zone}</td><td class="r num">${t.zone === "fear" ? "≤" : "≥"} ${t.level}</td><td class="r num">${t.episodes}</td>${td(t.excess_3m, 1, "")}<td class="r num">${pval(t.p_3m)}</td>${td(t.excess_12m, 1, "")}<td class="r num">${pval(t.p_12m)}</td></tr>`));
 }
@@ -361,7 +377,7 @@ function renderEvents() {
     ["Date", "Event", "Reading", H("1m change"), "What the gauge did", "Hit", H("Next 1m"), H("Next 3m"), H("Next 6m"), H("Next 12m"), H("Worst DD 3m"), H("12m after fear signal")],
     rows.map((e) => `<tr><td>${dateLbl(e.trade_date)}${e.moved_from ? `<small>list: ${dateLbl(e.moved_from)}</small>` : ""}</td>
       <td class="wrapc">${esc(e.name)}<small>${e.kind}${e.market === "ai" ? " · AI" : ""}</small></td>
-      <td>${isNum(e.reading) ? `<span class="chip" style="background:${bandColor(e.reading)}">${e.gauge} ${num(e.reading, 0)}</span> <small>${esc(e.band)}${isNum(e.coverage) && e.coverage < 50 ? " · low coverage" : ""}</small>` : "no reading"}</td>
+      <td>${isNum(e.reading) ? `<span class="chip"><span class="sw" style="background:${bandColor(e.reading)}"></span>${e.gauge} ${num(e.reading, 0)}</span> <small>${esc(e.band)}${isNum(e.coverage) && e.coverage < 50 ? " · low coverage" : ""}</small>` : "no reading"}</td>
       ${td(e.change_1m, 0, "")}<td class="wrapc">${esc(e.signal || "—")}</td><td>${hit(e.hit)}</td>
       ${td(e.ret_1m)}${td(e.ret_3m)}${td(e.ret_6m)}${td(e.ret_12m)}${td(e.mdd3m)}${td(e.signal_12m)}</tr>`));
 }

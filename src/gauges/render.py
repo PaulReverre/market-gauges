@@ -435,8 +435,8 @@ def methodology(reg: Registry) -> dict:
             "events": "Manual entries carry status weights: primary 1.0, guidance 0.8, secondhand 0.6, estimate 0.3.",
             "composite": "Pillar = weighted mean of live indicators; gauge = weighted mean of live pillars, "
                          "renormalized for missing weight. Coverage is the live share of target weight; below 70% "
-                         "the needle is hatched.",
-            "display": "G1-G3 needles use a 3-day EMA; G4 is unsmoothed.",
+                         "the gauge is marked low coverage.",
+            "display": "G1-G3 display a 3-day EMA; G4 is unsmoothed.",
             "validation": "Phase 3 backtest demoted indicators whose sign was wrong or unstable across stress "
                           "regimes; see reports/validation.md.",
         },
