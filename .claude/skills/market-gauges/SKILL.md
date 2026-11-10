@@ -7,8 +7,8 @@ description: Refresh and explain the contrarian market gauges (S&P 500, AI & sem
 
 Work from the repository root (`market-gauges/`). The pipeline is `src/signals`
 (see `README.md`); the dashboard reads `data/signals.json` and
-`data/signals_history.json`. The v1 four-gauge pipeline in `src/gauges` is
-retired (`LEGACY.md`); do not run or cite it.
+`data/signals_history.json`. The earlier four-gauge pipeline (v1) was removed;
+it survives only at the git tag `v1-final`.
 
 Ground rules:
 

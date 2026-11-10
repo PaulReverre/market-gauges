@@ -126,7 +126,7 @@ and already set as repository secrets.
 make setup      # Python 3.11 venv + dependencies
 make signals    # rebuild data/signals.json (about 3 minutes)
 make serve      # http://127.0.0.1:8765/dashboard/
-make test       # tests/test_signals.py
+make test       # unit tests
 ```
 
 The bot commits `data/` every weekday: `git pull` before working, and do not
@@ -143,7 +143,8 @@ data/           signals.json · signals_history.json · state/
 tests/          test_signals.py
 ```
 
-`src/gauges`, the rest of `config/`, `data/archive` and the other tests belong to
-the retired v1 pipeline: see [LEGACY.md](LEGACY.md).
+The earlier four-gauge pipeline (v1) was removed on 2026-11-10. Its code, tests,
+configuration and the `data/archive` parquet history are preserved at the git tag
+`v1-final` (`git checkout v1-final` to look, `git checkout main` to come back).
 
 Not investment advice.

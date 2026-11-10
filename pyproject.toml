@@ -4,20 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "market-gauges"
-version = "0.1.0"
-description = "Equity and AI sentiment / state gauges"
+version = "2.0.0"
+description = "Contrarian market gauges: S&P 500, AI and semiconductors, and a 10-year outlook"
 requires-python = ">=3.11"
 dependencies = [
-    "duckdb>=1.1",
     "httpx>=0.28",
+    "numpy>=2.0",
     "openpyxl>=3.1",
     "pandas>=2.2",
-    "pydantic>=2.7",
-    "pypdf>=5.0",
     "python-dotenv>=1.0",
     "pyyaml>=6.0",
-    "scipy>=1.13",
-    "tenacity>=9.0",
     "xlrd>=2.0",
     "yfinance>=1.7",
 ]

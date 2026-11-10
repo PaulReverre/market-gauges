@@ -3,8 +3,3 @@
 __pycache__/
 *.egg-info/
 .pytest_cache/
-# The DuckDB store is rebuilt from data/archive (parquet, committed); see gauges.archive.
-data/*.duckdb
-data/*.duckdb.wal
-data/inbox/
-data/cache/
