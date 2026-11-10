@@ -15,4 +15,5 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -e '.[dev]'
-      - run: python -m pytest
+      # The retired v1 pipeline (src/gauges) keeps its tests in the repo, but they are no longer run here.
+      - run: python -m pytest tests/test_signals.py

@@ -10,3 +10,11 @@ data/*.duckdb
 BUILD_PROMPT.md
 pyproject.toml
 Makefile
+data/state/
+# Retired v1 dashboard (see LEGACY.md): not served any more.
+dashboard/backtest.html
+data/latest.json
+data/history.json
+data/robustness.json
+reports/
+LEGACY.md

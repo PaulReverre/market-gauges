@@ -4,13 +4,24 @@
   "installCommand": "echo static site",
   "buildCommand": "echo static site",
   "outputDirectory": ".",
-  "redirects": [{ "source": "/", "destination": "/dashboard/" }],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/dashboard/"
+    }
+  ],
   "headers": [
     {
-      "source": "/data/(latest|history).json",
+      "source": "/data/(signals|signals_history).json",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
       ]
     }
   ]

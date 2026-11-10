@@ -1,11 +1,16 @@
 PY := .venv/bin/python
 
-.PHONY: setup probe ingest score render refresh backtest robustness restore sync serve test
+.PHONY: setup signals serve test probe ingest score render refresh backtest robustness restore sync legacy-test
 
 setup:
 	python3.11 -m venv .venv
 	$(PY) -m pip install -e '.[dev]'
 
+# The dashboard's data: full rebuild of data/signals.json (about 3 minutes).
+signals:
+	$(PY) -m signals.build
+
+# ---- retired v1 pipeline (see LEGACY.md); not scheduled any more ----
 probe:
 	$(PY) scripts/probe_sources.py
 
@@ -40,4 +45,7 @@ robustness:
 	$(PY) -m gauges.robustness
 
 test:
-	$(PY) -m pytest
+	$(PY) -m pytest tests/test_signals.py
+
+legacy-test:
+	$(PY) -m pytest --ignore=tests/test_signals.py

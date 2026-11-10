@@ -1,181 +1,149 @@
 # Market Gauges
 
-A daily-refreshing dashboard of four 0–100 gauges, built to the spec in
-[`BUILD_PROMPT.md`](BUILD_PROMPT.md):
+Contrarian buy/sell gauges for the S&P 500 and for AI and semiconductor stocks,
+plus a slow valuation read on the next decade. Live at
+<https://market-gauges.vercel.app/dashboard/>, rebuilt after every US session.
 
-| | Sentiment & volatility | Fundamental state |
+The dashboard shows three tiles. Select one for the detail behind it; select any
+row in the detail for that input's own chart and track record.
+
+| Tile | What it is | Horizon |
 |---|---|---|
-| **US equity (S&P 500)** | G1 · plus the fragility overlay and a CNN-method replica | G2 |
-| **AI sector** | G3 · plus the AI fragility flags | G4 · plus the four-light Unwind Signature |
+| **S&P 500** | 0–100 score from six volatility and options-positioning inputs | 1 to 12 months |
+| **AI & semiconductors** | 0–100 score from four volatility inputs, judged against the PHLX Semiconductor index | 1 to 12 months |
+| **S&P 500 · next 10 years** | Expected annual return implied by investor equity allocation and CAPE | 10 years |
 
-Every number on the dashboard comes from a fetched source or from a
-`config/events.yaml` entry with a source URL. Scores are point in time: each day
-uses only data public by then (revised macro series via ALFRED vintages).
+0 is extreme fear (historically the time to buy), 100 is complacency. A score of
+10 or lower is the **buy zone**; 90 or higher is the **caution zone**.
 
-Below the gauges, two display panels:
+## What "predictive" means here
 
-- **S&P 500 valuation vs history**: forward P/E (FactSet weekly, from 2017, with
-  FactSet's own 5- and 10-year averages), Shiller CAPE, trailing P/E, dividend
-  yield, the equity risk premium and corporate equities / GDP, each with its
-  5/10/20-year and full-history mean, standard deviation, z-score and
-  percentile. These are shown, not scored: the Phase 3 backtest found no
-  reliable sign for them against later returns.
-- **AI companies**: per basket company, recent returns (1W/1M/3M/YTD, from the
-  52-week high), the latest SEC earnings release (date, leader tone, AI
-  mentions, revenue guidance and its change vs the prior guide), EPS surprise,
-  revenue TTM growth from XBRL, and the next report date.
+No market metric determines future returns. What this project does instead:
 
-### Leader commentary and earnings releases
+- **Point in time.** Each input is ranked against its own history using only
+  data available on that day (expanding percentile, 2 years minimum). The score
+  is the average of those ranks within each group, then across groups, ranked
+  the same way.
+- **Odds, recomputed daily.** For every score zone the build measures what the
+  benchmark did 1, 3, 6 and 12 months later on every past day in that zone:
+  median, share positive, the middle 80% of outcomes, and the number of separate
+  episodes (the honest sample size, since daily windows overlap).
+- **Significance that respects clustering.** The p-value for a zone's excess
+  return comes from circularly shifting the signal against returns 400 times,
+  which keeps both series' autocorrelation and breaks only their alignment.
+- **Split-half check.** An edge has to have the same sign before and after 2010
+  to be graded "strong" or "moderate".
 
-`sources/releases.py` reads each basket company's 8-K Item 2.02 earnings
-release (exhibit 99.1) from SEC EDGAR, back to 2015. It scores executives'
-quoted remarks and the release narrative with the Loughran-McDonald financial
-sentiment word lists, counts AI mentions, and parses revenue guidance. No
-language model produces any number. Remarks outside earnings releases
-(interviews, keynotes, letters) go through the skill's `log-commentary`, as
-sourced `events.yaml` entries you approve.
+What that found (figures from the 2026-11-09 build; the dashboard always shows
+current ones):
 
-**License note.** The Loughran-McDonald Master Dictionary (Notre Dame SRAF) is
-free for academic research; commercial use needs a license from its authors.
-The pipeline downloads it at run time into `data/cache/` (git-ignored, cached in
-CI) and never redistributes it. Get a license, or swap the word lists, before
-any commercial use.
+- **Buy side is real.** S&P 500 score ≤ 10: 51 episodes since 1994, +5.5% mean
+  over the next 3 months against +2.5% on any day, positive 79% of the time
+  against 70%, same sign in both halves, p < 0.01. Semis: +17.3% against +4.9%.
+- **Sell side is weak.** S&P 500 score ≥ 90: +0.7% over 3 months against +2.5%
+  (p ≈ 0.04). Returns after complacency were below average, not negative. For
+  semis it is not statistically distinguishable from chance at 3 months.
+- **Valuation is the long-horizon signal.** Fitted out of sample, investor
+  equity allocation missed the subsequent 10-year return by 2.6 points a year on
+  average, against 4.9 for the historical mean.
 
-## Quick start
+Caveat that applies to all of it: inputs and zone edges were chosen on this same
+history, which flatters every number to some degree.
 
-```bash
-make setup                 # Python 3.11 venv + dependencies
-cp .env.example .env       # then fill in the keys below
-make restore               # rebuild the local store from data/archive (if present)
-make refresh               # ingest -> score -> render (a few minutes; full backfill on an empty store)
-make serve                 # dashboard at http://127.0.0.1:8765/dashboard/
-```
+## Every metric, and what happened to it
 
-Start each later session with `make sync`. The scheduled job commits new
-`data/archive` files several times a week; `make sync` pulls them
-(`git pull --ff-only`) and rebuilds the local store from the archive
-(`restore --force`), so local scores and the bot's start from the same rows.
-Without it, a local `make ingest` builds on a stale store and re-pulls rows the
-bot already archived.
+**In the S&P 500 score**
 
-Keys (`.env`, free tiers): `FRED_API_KEY`, `FINNHUB_API_KEY`, `OPENROUTER_API_KEY`,
-`EIA_API_KEY`, and `SEC_USER_AGENT` (a name and contact email, per SEC fair-access
-policy). `MASSIVE_API_KEY` and `FMP_API_KEY` are optional. A missing key makes
-that source report `missing_key`; everything else still runs.
-
-## Make targets
-
-| Target | What it does |
+| Input | Why |
 |---|---|
-| `probe` | Phase 0 source probe → `reports/source_status.md` |
-| `ingest` | Pull every source into the append-only store (`data/gauges.duckdb`) and archive the run |
-| `score` | Percentiles, staleness, pillars, gauges, coverage, overlays (derived tables) |
-| `render` | Write `data/latest.json` and `data/history.json` |
-| `refresh` | `ingest` + `score` + `render` |
-| `backtest` | Phase 3 validation; applies demotions to `config/indicators.yaml`, writes `reports/validation.md` |
-| `robustness` | Event, episode, strategy and Monte Carlo study of the scored history → `reports/robustness.md` |
-| `restore` | Rebuild the store from `data/archive` (refuses if the store already has rows) |
-| `sync` | `git pull --ff-only`, then rebuild the store from `data/archive` (replacing its contents) |
-| `serve` | Static server for the dashboard |
-| `test` | pytest (no network) |
+| VIX | Most dependable single fear reading; passes alone in both halves |
+| VIX IV percentile (1 year) | Fear relative to the recent regime; makes the calm side of the score work |
+| VIX / 3-month VIX | Backwardation = panic. History from 2006, so 2008 weighs on it |
+| VIX minus 20-day realized volatility | Price of protection; passes alone in both halves |
+| Equity put/call ratio, 10-day | What investors are doing, not what options cost |
+| Implied correlation (COR1M) | Everything being sold at once |
 
-## How it fits together
+**In the AI & semiconductors score**: semiconductor 20-day realized volatility,
+VXN, VIX, VIX / 3-month VIX. Semis bottom when the whole market panics; the
+sector's own realized volatility is what keeps the combination working before
+2010.
+
+**Tested and shown, not scored** (each has its own evidence on the dashboard):
+VIX IV rank, share of S&P 500 members above their 50-day average and with RSI
+below 30 (good 1-month confirmation, but they weakened the score at 3–12 months),
+VVIX, SKEW, VXN minus realized volatility, NVDA realized volatility, AI basket
+breadth, Nebius GPU spot prices (too little history to test).
+
+**Rejected as signals**: drawdown from the 52-week high and distance from the
+200-day average (buying them lost money in 2000–02 and 2008), credit spreads,
+semis' relative strength.
+
+**Dropped from the old four-gauge dashboard**
+
+| Old metric(s) | Reason |
+|---|---|
+| Fundamental-state gauges (growth, earnings, rates, consumer; AI spend, supply chain, monetization, financing) | Coincident, not contrarian; most inputs had already failed the old backtest; 30–56% data coverage |
+| Fragility overlay | The old robustness study found no link to later drawdowns or returns |
+| CNN-method replica, AI unwind lights, AI fragility flags | Display-only extras with nothing behind them to test |
+| AAII, NAAIM | No free history (AAII) or a source that went stale (NAAIM) |
+| Margin debt, MOVE, NFCI, credit spreads, copper/gold, dollar | Wrong sign or no edge against forward returns, here or in the old backtest |
+| SOFR−IORB, HY/IG and CCC/BB spreads | Too little history to test (2021 and 2023 onward) |
+| CFTC positioning | Weekly and lagged; not retested |
+| RSP/SPY, IWM/SPY, SPHB/SPLV, S&P vs 125-day average | Trend and relative-strength measures: coincident, not contrarian |
+| McClellan summation, net highs−lows | Breadth, now covered by the two breadth context metrics |
+| NVDA option IV and skew, option-volume ratios, leveraged-ETF flows | Weeks of history only |
+| Wikipedia and GDELT attention, earnings-release tone | Failed the old backtest, or sources that kept breaking |
+| S&P 500 valuation panel (forward P/E, ERP, dividend yield, equities/GDP) | Replaced by the 10-year layer, which keeps the two measures that predict |
+
+The AI company table and the catalyst calendar are kept, behind the AI gauge.
+
+## How it runs
 
 ```
-config/series.yaml      raw series: what each source pulls, frequency, release lag, sanity bounds, cadence
-config/indicators.yaml  indicator registry: inputs, transforms, direction, weight, role, fragility, CNN rows
-config/events.yaml      manual KPIs (source_url + status required)    config/baskets.yaml  AI basket
-config/calendar.yaml    FOMC and BEA dates for the catalyst strip
-
-src/gauges/sources/*    one client per source  ->  ingest.py  ->  store.py (DuckDB, append-only)
-                                                                 archive.py (parquet per run, committed)
-features.py (as-known daily values) -> score.py (gauges, overlays) -> render.py (JSON) -> dashboard/index.html
-backtest.py (Section 8 validation, gates composite membership)
-robustness.py (cycles, events, fear/greed episodes, strategies, Monte Carlo) -> reports/robustness.md,
-              data/robustness.json -> dashboard/backtest.html
+.github/workflows/refresh.yml   02:00 UTC Tue–Sat (+ 10:00 UTC retry)
+  └─ python -m signals.build
+       fetch    Yahoo (indices, 503 members, AI basket) · Cboe (COR1M, VVIX, SKEW, put/call)
+                FRED (Z.1, Baa, 10y) · shillerdata.com · SSGA · Nebius · Finnhub
+       score    src/signals/gauges.py, model.py, longterm.py
+       write    data/signals.json, data/signals_history.json, data/state/*
+  └─ commit → Vercel redeploys dashboard/index.html
 ```
 
-`make robustness` replays the scored history through every bull and bear market,
-correction and named event since 2000 (dates in `config/market_events.yaml`;
-peaks and troughs are checked against the closes). It measures returns after
-Extreme Fear and Extreme Greed against random entry dates, stress-tests simple
-gauge-driven rules (parameter grids, sub-periods, execution delay, costs,
-leave-one-pillar-out, a circular-shift placebo), reports correlation
-coefficients with block-bootstrap intervals, and runs Monte Carlo resamples. It
-runs by hand, not in CI; the dashboard's **Backtest** tab draws the result.
+The build re-downloads full history every run, so there is no database and a
+missed day heals itself. `data/state/` holds the two series that cannot be
+re-downloaded (Cboe put/call, Nebius spot) and a last-good copy of the slow
+sources; if a source fails, the build uses that copy and the dashboard's
+"Sources" menu says so. Only a Yahoo failure stops the build, leaving the
+previous day's file in place (GitHub emails you about the failed run).
 
-The DuckDB file is git-ignored. Each ingest run writes the rows it added to
-`data/archive/<table>/<run_id>.parquet` (never rewritten), so history survives
-in git and a fresh machine or CI runner rebuilds the store with `make restore`.
+Cost: nothing. No key is needed for the scores. `FRED_API_KEY` makes FRED faster
+and `FINNHUB_API_KEY` fills the earnings columns of the AI table; both are free
+and already set as repository secrets.
 
-## Scheduled refresh (GitHub Actions)
-
-`.github/workflows/refresh.yml` runs on the spec's schedule: daily at 02:00 UTC
-Tue–Sat (after Mon–Fri closes), weekly on Saturday (CFTC, NAAIM, AAII, FactSet,
-Census BTOS), and monthly on the 12th (FINRA, MOPS, Shiller, Uvik, EIA).
-It restores the store, ingests that group, scores, renders, and commits
-`data/` back. Run it by hand from the Actions tab (`workflow_dispatch`).
-
-Sources in `ci_skip` (`config/series.yaml`) are left out of every `--cadence`
-run, scheduled or by hand. `tsmc` is there: TSMC's IR page answers GitHub's
-runners with a Cloudflare challenge (HTTP 403). The `sc_tsmc` indicator reads
-the same revenue from TWSE MOPS, and local runs (`make ingest`, no `--cadence`)
-still pull `tsmc` for the TSMC-vs-MOPS cross-check. Check what a run would pull
-with `python -m gauges.ingest --cadence monthly --dry-run`.
-
-Add the keys as repository secrets (Settings → Secrets and variables → Actions),
-or from a terminal with the GitHub CLI, one per key:
+## Local use
 
 ```bash
-gh secret set FRED_API_KEY --repo PaulReverre/market-gauges
+make setup      # Python 3.11 venv + dependencies
+make signals    # rebuild data/signals.json (about 3 minutes)
+make serve      # http://127.0.0.1:8765/dashboard/
+make test       # tests/test_signals.py
 ```
 
-(`gh secret set` prompts for the value, so it never lands in your shell history.)
+The bot commits `data/` every weekday: `git pull` before working, and do not
+commit a locally built `data/signals.json` unless you mean to publish it.
 
-## Hosting
+## Layout
 
-Pick one:
+```
+src/signals/    fetch.py · gauges.py (indicator definitions) · model.py (scoring, odds, evidence)
+                longterm.py · companies.py · build.py
+dashboard/      index.html (static; ECharts from cdnjs)
+config/         calendar.yaml (macro dates for the catalyst list)
+data/           signals.json · signals_history.json · state/
+tests/          test_signals.py
+```
 
-- **GitHub Pages**: Settings → Pages → Source "GitHub Actions", then add the
-  repository variable `PAGES_ENABLED=true`. The `pages` job publishes the
-  dashboard, `data/latest.json` and `data/history.json` after each refresh.
-  Pages on a private repository needs a paid GitHub plan.
-- **Vercel**: import the repository in Vercel. `vercel.json` serves it as a
-  static site (`/` → `/dashboard/`); every data commit redeploys.
+`src/gauges`, the rest of `config/`, `data/archive` and the other tests belong to
+the retired v1 pipeline: see [LEGACY.md](LEGACY.md).
 
-Either way `data/latest.json` sits at a stable URL (e.g.
-`https://<project>.vercel.app/data/latest.json`) for other workflows to read.
-
-## Claude Code skill
-
-`.claude/skills/market-gauges/SKILL.md` adds `refresh`, `explain` (≤200 words,
-numbers only from `python -m gauges.digest`), `log-event <kpi>`,
-`log-commentary <leader>` and `post-earnings <ticker>` (propose sourced
-`events.yaml` entries, write only after approval), and `validate`.
-
-## Acceptance checks (Section 13)
-
-- All four gauges render with as-of and coverage; G1 and G2 above 80% coverage.
-- Every dashboard number has a source tooltip/link and an as-of date.
-- `cnn_replica` within ±10 of CNN's published value on 5 days you enter by
-  hand: compare `data/latest.json` → `cnn_replica` with CNN's page. Expect
-  systematic gaps: CNN uses NYSE breadth; this uses S&P 500 members.
-- `make test` green; cross-checks pass or are flagged.
-- `reports/validation.md` exists with verdicts.
-- `make ingest` twice in a row: the second run inserts nothing.
-
-## Known gaps
-
-Shown on the dashboard rather than papered over: no free single-name CDS or AI
-bond spreads (equity proxies + manual events); no free historical option IV
-(snapshots accumulate from the first post-close run); ICE BofA spreads only
-from 2023-10-16 (ALFRED holds no older vintages); S&P DJI EPS file blocked
-(FactSet weekly PDF instead, from January 2017, the start of its PDF archive);
-AAII full history is paywalled; NAAIM's
-weekly file stopped updating on 2026-08-19; SemiAnalysis H100 index has no
-feed; GDELT rate-limits heavily; AI fundamentals move in steps around earnings.
-G2 runs below 70% coverage since the October 2026 backtest demoted FactSet
-growth, beats, forward P/E and the ERP. What remains of its earnings and
-valuation pillars is mostly indicators with no free source (forward revenue,
-margins) or too little history (top-10 concentration). Its tile shows "low
-coverage" until those fill in.
+Not investment advice.

@@ -6,21 +6,19 @@
 <title>Market Gauges</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 22a12 12 0 0 1 24 0' fill='none' stroke='%232a78d6' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M16 22l6-8' stroke='%230b0b0b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <script>
-  // Apply a saved theme before first paint.
   try { const t = localStorage.getItem("mg-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) { /* storage blocked */ }
 </script>
 <style>
-/* Tokens. Bands b1..b5 are a diverging scale (fear/weak red <- neutral gray -> blue greed/strong),
-   each arm validated as an ordinal ramp per mode. Series s1..s3 are categorical slots 1-3. */
+/* Zones z1..z5 are a diverging scale: fear (red) <- neutral gray -> complacency (blue). */
 :root {
   color-scheme: light;
   --page: #f9f9f7; --surface: #fcfcfb; --wash: #f1f0ec;
   --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
   --grid: #e1e0d9; --base: #c3c2b7; --ring: rgba(11, 11, 11, .10);
   --link: #256abf;
-  --b1: #c9403e; --b2: #ee9a92; --b3: #bdbbb2; --b4: #86b6ef; --b5: #256abf;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
-  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --z1: #c9403e; --z2: #ee9a92; --z3: #bdbbb2; --z4: #86b6ef; --z5: #256abf;
+  --s1: #2a78d6; --s2: #eb6834;
+  --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -29,8 +27,8 @@
     --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --base: #383835; --ring: rgba(255, 255, 255, .10);
     --link: #6da7ec;
-    --b1: #ee6b67; --b2: #8f3f3c; --b3: #4a4945; --b4: #1c5cab; --b5: #6da7ec;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --z1: #ee6b67; --z2: #8f3f3c; --z3: #4a4945; --z4: #1c5cab; --z5: #6da7ec;
+    --s1: #3987e5; --s2: #d95926;
   }
 }
 :root[data-theme="dark"] {
@@ -39,835 +37,430 @@
   --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
   --grid: #2c2c2a; --base: #383835; --ring: rgba(255, 255, 255, .10);
   --link: #6da7ec;
-  --b1: #ee6b67; --b2: #8f3f3c; --b3: #4a4945; --b4: #1c5cab; --b5: #6da7ec;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+  --z1: #ee6b67; --z2: #8f3f3c; --z3: #4a4945; --z4: #1c5cab; --z5: #6da7ec;
+  --s1: #3987e5; --s2: #d95926;
 }
-
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-a { color: var(--link); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a { color: var(--link); text-decoration: none; } a:hover { text-decoration: underline; }
 button { font: inherit; color: inherit; }
-.num { font-variant-numeric: tabular-nums; }
-.muted { color: var(--muted); }
-.ink2 { color: var(--ink-2); }
-.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+.num, td, th { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .ink2 { color: var(--ink-2); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 4px; }
 
-/* Header */
-header.top { border-bottom: 1px solid var(--grid); background: var(--page); }
-.bar { display: flex; align-items: center; gap: 6px 20px; flex-wrap: wrap; padding: 12px 16px; }
-.brand { font-weight: 650; font-size: 15px; letter-spacing: -.01em; color: var(--ink); }
-.tabs { display: flex; gap: 2px; }
-.tabs button, .tabs a { background: none; border: 0; color: var(--ink-2); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 13.5px; }
-.tabs a:hover, .tabs button:hover { background: var(--wash); text-decoration: none; color: var(--ink); }
-.tabs [aria-selected="true"] { color: var(--ink); background: var(--wash); font-weight: 550; }
-.meta { margin-left: auto; display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
+header.top { border-bottom: 1px solid var(--grid); }
+.bar { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; padding: 12px 16px; }
+.brand { font-weight: 650; font-size: 15px; letter-spacing: -.01em; }
+.meta { margin-left: auto; display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
 .meta b { color: var(--ink-2); font-weight: 550; }
-.iconbtn { background: none; border: 1px solid var(--grid); border-radius: 6px; padding: 3px 9px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; }
-.iconbtn:hover { background: var(--wash); }
+.btn { background: none; border: 1px solid var(--grid); border-radius: 6px; padding: 3px 9px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--wash); }
 details.pop { position: relative; }
-details.pop > summary { list-style: none; cursor: pointer; }
-details.pop > summary::-webkit-details-marker { display: none; }
-details.pop .panel { position: absolute; right: 0; top: 30px; width: min(420px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .16); z-index: 30; color: var(--ink); font-size: 12.5px; }
-.panel h4 { margin: 0 0 6px; font-size: 12.5px; }
-.panel ul { margin: 0 0 10px; padding-left: 16px; }
-.panel li { margin: 0 0 5px; }
-.panel .msg { color: var(--muted); word-break: break-word; }
+details.pop > summary { list-style: none; cursor: pointer; } details.pop > summary::-webkit-details-marker { display: none; }
+details.pop .panel { position: absolute; right: 0; top: 30px; width: min(400px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .16); z-index: 30; color: var(--ink); font-size: 12.5px; }
+.panel ul { margin: 0; padding: 0; list-style: none; } .panel li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+.panel li .nm { flex: 1; min-width: 0; } .panel li small { color: var(--muted); display: block; word-break: break-word; }
+.sdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+.sdot.good { background: var(--good); } .sdot.warning { background: var(--warning); } .sdot.critical { background: var(--critical); }
 
-/* Status: always a dot plus a word */
-.sdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--muted); }
-.sdot.good { background: var(--good); } .sdot.warning { background: var(--warning); }
-.sdot.serious { background: var(--serious); } .sdot.critical { background: var(--critical); }
-.sdot.off { background: transparent; box-shadow: inset 0 0 0 1.5px var(--base); }
-.issues-btn { display: inline-flex; align-items: center; gap: 6px; }
+main { padding: 20px 0 56px; }
+.lede { color: var(--ink-2); font-size: 13px; margin: 0 0 16px; max-width: 760px; }
 
-main { padding: 8px 0 48px; }
-.block { padding: 28px 0 4px; }
-.block + .block { border-top: 1px solid var(--grid); margin-top: 24px; }
-.bhead { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; margin-bottom: 14px; }
-.bhead h2 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
-.bhead .sub { color: var(--muted); font-size: 12.5px; }
-.bhead .right { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.note { color: var(--muted); font-size: 12px; margin: 10px 0 0; max-width: 900px; }
-
-/* Alerts */
-.alerts { display: grid; gap: 8px; margin-top: 16px; }
-.alert { display: flex; gap: 10px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--ring); }
-.alert .sdot { transform: translateY(1px); }
-
-/* Segmented control */
-.seg { display: inline-flex; background: var(--wash); border-radius: 8px; padding: 2px; gap: 2px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-.seg button { background: none; border: 0; padding: 4px 10px; border-radius: 6px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
-.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--ring); font-weight: 550; }
-
-/* Overview tiles */
-.groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
-.group h3 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 8px; letter-spacing: .02em; }
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px 12px; cursor: pointer; text-align: left; min-width: 0; transition: border-color .12s; }
+/* Tiles */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px 18px 14px; cursor: pointer; text-align: left; min-width: 0; display: flex; flex-direction: column; transition: border-color .12s; }
 .tile:hover { border-color: var(--base); }
-.tile[aria-pressed="true"] { border-color: var(--ink-2); }
-.tile .tname { font-size: 13px; color: var(--ink-2); font-weight: 550; }
-.tile .readout { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 10px; flex-wrap: wrap; }
-.tile .val { font-size: 34px; font-weight: 650; letter-spacing: -.02em; line-height: 1; }
-.bandlbl { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 550; color: var(--ink); }
+.tile[aria-expanded="true"] { border-color: var(--ink-2); box-shadow: 0 0 0 1px var(--ink-2); }
+.tname { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.tname small { font-weight: 400; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.readout { display: flex; align-items: baseline; gap: 10px; margin: 10px 0 12px; flex-wrap: wrap; }
+.val { font-size: 40px; font-weight: 650; letter-spacing: -.025em; line-height: 1; }
+.val small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
+.zone { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
 .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
-.scale { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; height: 6px; }
-.scale i { background: var(--grid); }
+.chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ink); white-space: nowrap; }
+.chip.quiet { border-color: var(--grid); color: var(--muted); font-weight: 500; }
+.scale { position: relative; display: grid; gap: 2px; height: 6px; grid-template-columns: 10fr 15fr 50fr 15fr 10fr; }
 .scale i:first-child { border-radius: 3px 0 0 3px; } .scale i:last-child { border-radius: 0 3px 3px 0; }
 .scale .mark { position: absolute; top: -5px; width: 3px; height: 16px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); box-shadow: 0 0 0 2px var(--surface); }
 .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 5px; }
-.deltas { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 10px; flex-wrap: wrap; }
-.deltas span b { font-weight: 400; color: var(--muted); margin-right: 4px; }
-.spark { position: relative; height: 34px; margin-top: 10px; }
-.spark svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.spark .dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--surface); }
-.tfoot { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--muted); margin-top: 6px; }
-.tfoot .low { display: inline-flex; gap: 5px; align-items: center; color: var(--ink-2); }
+.odds1 { font-size: 13px; color: var(--ink-2); margin-top: 12px; min-height: 58px; }
+.odds1 b { color: var(--ink); font-weight: 600; }
+.tfoot { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: auto; padding-top: 10px; font-size: 12px; color: var(--muted); }
+.tfoot .d span { margin-right: 10px; white-space: nowrap; } .tfoot .d b { font-weight: 400; color: var(--ink-2); }
+.spark { width: 92px; height: 26px; flex: none; } .spark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.more { font-size: 12px; color: var(--link); white-space: nowrap; }
 
 /* Detail */
-.summary { color: var(--ink-2); font-size: 13px; margin: -4px 0 18px; }
-.summary b { color: var(--ink); font-weight: 600; }
-.detail { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; }
-.panelcol { align-self: start; position: sticky; top: 16px; }
-.panelcol h4 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 10px; letter-spacing: .02em; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.panelcol section + section { margin-top: 26px; }
-.prow { display: grid; grid-template-columns: minmax(0, 1fr) 96px 38px; gap: 10px; align-items: center; font-size: 13px; padding: 5px 0; }
-.prow .pn small { color: var(--muted); font-size: 11.5px; margin-left: 4px; }
-.prow .pv { text-align: right; }
-.dbar { position: relative; height: 8px; background: var(--wash); border-radius: 4px; }
-.dbar::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--base); }
-.dbar b { position: absolute; top: 0; bottom: 0; }
-.dbar b.lo { border-radius: 4px 0 0 4px; } .dbar b.hi { border-radius: 0 4px 4px 0; }
-.dbar.mini { display: inline-block; width: 56px; height: 6px; vertical-align: middle; margin-left: 8px; }
-.drow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; font-size: 13px; padding: 4px 0; color: var(--ink-2); }
-.drow .num { color: var(--ink); }
-.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 13px; color: var(--ink-2); }
-.kv .num { color: var(--ink); text-align: right; }
-.linkbtn { background: none; border: 0; color: var(--link); cursor: pointer; padding: 0; font-size: 12.5px; }
-.linkbtn:hover { text-decoration: underline; }
+.detail { margin-top: 28px; }
+.dhead { display: flex; align-items: baseline; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 4px; }
+.dhead h2 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+.dhead .x { margin-left: auto; }
+.dsub { color: var(--ink-2); font-size: 13px; margin: 0 0 20px; max-width: 820px; }
+.dsub b { color: var(--ink); font-weight: 600; }
+section.blk { margin-top: 28px; }
+.bh { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.bh h3 { font-size: 14px; margin: 0; font-weight: 650; }
+.bh .sub { color: var(--muted); font-size: 12.5px; }
+.bh .right { margin-left: auto; }
+.note { color: var(--muted); font-size: 12px; margin: 8px 0 0; max-width: 860px; }
+.seg { display: inline-flex; background: var(--wash); border-radius: 8px; padding: 2px; gap: 2px; }
+.seg button { background: none; border: 0; padding: 3px 10px; border-radius: 6px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--ring); font-weight: 550; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px 12px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+td { text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+tr:last-child > td { border-bottom: 0; }
+td small { display: block; color: var(--muted); font-size: 11.5px; }
+tr.now > td { background: var(--wash); }
+tr.now > td:first-child { box-shadow: inset 3px 0 0 var(--ink); }
+tr.allrow > td { color: var(--ink-2); border-top: 1px solid var(--base); }
+th.sortable { cursor: pointer; } th.sortable:hover { color: var(--ink); }
+.zl { display: inline-flex; align-items: center; gap: 7px; font-weight: 550; }
+.zl small { display: inline; font-weight: 400; margin-left: 2px; }
+.ev { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.evc { padding: 12px 14px; font-size: 13px; color: var(--ink-2); }
+.evc h4 { margin: 0 0 4px; font-size: 13px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dots { letter-spacing: 1px; font-size: 11px; color: var(--ink); } .dots i { font-style: normal; color: var(--base); }
+.grade { font-size: 11.5px; font-weight: 550; color: var(--ink-2); }
+.chart { width: 100%; height: 440px; } .chart.sm { height: 220px; } .chart.md { height: 300px; }
+.legend { display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); padding: 0 14px 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .ln { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
 
-/* Tables */
-.tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
-.data th, .data td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; vertical-align: middle; }
-.data th { color: var(--muted); font-weight: 550; font-size: 12px; border-bottom-color: var(--base); }
-.data th[data-sort] { cursor: pointer; user-select: none; }
-.data th[data-sort]:hover { color: var(--ink); }
-.data th[aria-sort="ascending"]::after { content: " ↑"; } .data th[aria-sort="descending"]::after { content: " ↓"; }
-.data .r { text-align: right; }
-.data td.name { white-space: normal; min-width: 220px; }
-.data td.name small { display: block; color: var(--muted); font-size: 11.5px; }
-.data tr.grp th { color: var(--ink); font-size: 12.5px; font-weight: 600; padding-top: 18px; border-bottom-color: var(--grid); }
-.data tr.grp th span { color: var(--muted); font-weight: 400; margin-left: 8px; }
-.data tr.inactive td { color: var(--muted); }
-.data .opt { display: none; }
-.data.all .opt { display: table-cell; }
-.tag { display: inline-block; font-size: 11px; color: var(--muted); margin-left: 6px; white-space: nowrap; }
-.tag::before { content: "· "; }
-.tblbar { display: flex; gap: 14px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.zbar { position: relative; display: inline-block; width: 72px; height: 6px; background: var(--wash); border-radius: 3px; vertical-align: middle; }
-.zbar::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--base); }
-.zbar b { position: absolute; top: 0; bottom: 0; }
-svg.mspark { display: block; }
-
-/* Signals */
-.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
-.sig h3 { font-size: 13.5px; margin: 0 0 4px; font-weight: 600; }
-.sig .lede { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
-.bignum { font-size: 28px; font-weight: 650; letter-spacing: -.02em; }
-.meter { height: 6px; border-radius: 3px; background: var(--wash); margin: 8px 0 4px; overflow: hidden; }
-.meter b { display: block; height: 100%; border-radius: 3px; background: var(--b1); }
-.srow { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
-.srow:last-child { border-bottom: 0; }
-.srow .sdot { transform: translateY(1px); }
-.srow .st { color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
-.srow small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
-.mrow { display: grid; grid-template-columns: minmax(0, 1fr) 80px 34px; gap: 10px; align-items: center; font-size: 12.5px; color: var(--ink-2); padding: 3px 0; }
-.mtrack { height: 5px; background: var(--wash); border-radius: 3px; overflow: hidden; }
-.mtrack b { display: block; height: 100%; background: var(--b1); border-radius: 3px; }
-.subhead { font-size: 12px; font-weight: 600; color: var(--muted); margin: 18px 0 4px; }
-
-/* History */
-#histchart { height: 440px; }
-
-/* Lists */
-.lrow { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 13px; align-items: baseline; }
-.lrow:last-child { border-bottom: 0; }
-.lrow .when { color: var(--muted); font-size: 12px; }
-.lrow .k { color: var(--muted); font-size: 12px; }
-
-/* Methodology */
-.method h2 { font-size: 16px; margin: 28px 0 10px; }
-.method ul { padding-left: 18px; margin: 0; max-width: 900px; }
-.method li { margin: 5px 0; color: var(--ink-2); }
-select { font: inherit; font-size: 12.5px; background: var(--surface); color: var(--ink); border: 1px solid var(--grid); border-radius: 6px; padding: 3px 6px; }
-
-footer { color: var(--muted); font-size: 11.5px; padding: 24px 0 0; border-top: 1px solid var(--grid); margin-top: 32px; }
-footer p { margin: 3px 0; }
-.err { padding: 60px 16px; text-align: center; color: var(--muted); }
-
-@media (max-width: 1100px) {
-  .groups { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 960px) {
-  .detail, .two { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-  .panelcol { position: static; }
-}
-@media (max-width: 720px) {
-  .meta { margin-left: 0; width: 100%; }
-  #histchart { height: 380px; }
-}
-@media (max-width: 520px) {
-  .tiles { grid-template-columns: minmax(0, 1fr); }
-  .tile .val { font-size: 30px; }
+/* Indicator rows */
+tr.ind { cursor: pointer; } tr.ind:hover > td { background: var(--wash); }
+tr.ind td:first-child { white-space: normal; min-width: 210px; }
+tr.grp > td { background: none; color: var(--muted); font-size: 12px; font-weight: 600; padding-top: 14px; border-bottom: 1px solid var(--grid); text-align: left; }
+.pos { position: relative; width: 120px; height: 6px; background: linear-gradient(90deg, var(--z1) 0 10%, var(--z2) 10% 25%, var(--z3) 25% 75%, var(--z4) 75% 90%, var(--z5) 90%); border-radius: 3px; display: inline-block; vertical-align: middle; }
+.pos .mark { position: absolute; top: -4px; width: 3px; height: 14px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); box-shadow: 0 0 0 2px var(--surface); }
+.car { display: inline-block; width: 10px; color: var(--muted); transition: transform .12s; } tr.open .car { transform: rotate(90deg); }
+tr.exp > td { white-space: normal; text-align: left; background: var(--wash); padding: 14px 16px 16px; }
+.expg { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; }
+.expg p { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); max-width: 520px; } .expg p b { color: var(--ink); font-weight: 600; }
+.mini { font-size: 12.5px; margin-top: 6px; } .mini th, .mini td { padding: 5px 8px; background: none !important; }
+.badge { font-size: 11px; color: var(--muted); border: 1px solid var(--grid); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+details.fold { margin-top: 28px; }
+details.fold > summary { cursor: pointer; font-size: 14px; font-weight: 650; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: "›"; display: inline-block; width: 10px; color: var(--muted); transition: transform .12s; }
+details.fold[open] > summary::before { transform: rotate(90deg); }
+details.fold > summary .sub { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+details.fold > .inner { margin-top: 10px; }
+.pos-t { color: var(--ink); } .neg-t { color: var(--ink); }
+.cat { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 12px; font-size: 13px; padding: 12px 14px; }
+.cat .d { color: var(--muted); }
+.kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kv > div { padding: 12px 14px; } .kv .k { font-size: 12px; color: var(--muted); } .kv .v { font-size: 22px; font-weight: 650; letter-spacing: -.02em; } .kv .s { font-size: 12px; color: var(--ink-2); }
+footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--grid); color: var(--muted); font-size: 12px; }
+footer p { margin: 0 0 8px; max-width: 860px; }
+.empty { padding: 40px 0; color: var(--muted); }
+@media (max-width: 860px) {
+  .tiles { grid-template-columns: 1fr; } .odds1 { min-height: 0; }
+  .ev, .expg { grid-template-columns: 1fr; } .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart { height: 380px; }
 }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 </head>
 <body>
 <header class="top">
-  <div class="bar wrap">
-    <span class="brand">Market Gauges</span>
-    <nav class="tabs" role="tablist" aria-label="Views">
-      <button role="tab" data-tab="dash" aria-selected="true">Overview</button>
-      <button role="tab" data-tab="method" aria-selected="false">Methodology</button>
-      <a href="backtest.html">Backtest</a>
-    </nav>
-    <div class="meta" id="meta">Loading…</div>
+  <div class="wrap bar">
+    <div class="brand">Market Gauges</div>
+    <div class="meta">
+      <span id="asof"></span>
+      <details class="pop" id="srcpop"><summary class="btn"><span class="sdot" id="srcdot"></span><span id="srclbl">Sources</span></summary><div class="panel" id="srcpanel"></div></details>
+      <button class="btn" id="theme" type="button" aria-label="Switch between light and dark">Theme</button>
+    </div>
   </div>
 </header>
 <main class="wrap">
-  <section id="tab-dash">
-    <div class="alerts" id="alerts"></div>
-    <div class="groups" id="overview"></div>
-
-    <section class="block" id="detail-block">
-      <div class="bhead"><h2>Inside the gauge</h2><div class="right"><div class="seg" id="gsel" role="group" aria-label="Gauge"></div></div></div>
-      <div id="detail"></div>
-    </section>
-
-    <section class="block" id="signals">
-      <div class="bhead"><h2>Risk signals</h2><span class="sub">Overlays shown beside the gauges, not inside them</span></div>
-      <div class="two"><div class="sig" id="fragility"></div><div class="sig" id="unwind"></div></div>
-    </section>
-
-    <section class="block">
-      <div class="bhead"><h2>History</h2><span class="sub" id="histnote"></span>
-        <div class="right"><div class="seg" id="histmode" role="group" aria-label="Market"></div><div class="seg" id="histrange" role="group" aria-label="Range"></div></div></div>
-      <div id="histchart" role="img" aria-label="Gauge history with the index price above"></div>
-    </section>
-
-    <section class="block" id="valuation"></section>
-    <section class="block" id="aicos"></section>
-
-    <section class="block">
-      <div class="two">
-        <div><div class="bhead"><h2>Catalysts</h2><span class="sub">next 30 days</span></div><div id="catalysts"></div></div>
-        <div><div class="bhead"><h2>Biggest moves this week</h2><span class="sub">indicator score change, 5 trading days</span></div><div id="movers"></div></div>
-      </div>
-    </section>
-
-    <section class="block" id="watchlist"></section>
-  </section>
-  <section id="tab-method" class="method" hidden></section>
-  <footer id="footer"></footer>
+  <p class="lede" id="lede">Contrarian gauges. 0 is extreme fear, historically the time to buy; 100 is complacency. Each one shows what the market actually did after readings like today's. Select a gauge for the detail.</p>
+  <div class="tiles" id="tiles"><div class="empty">Loading…</div></div>
+  <div class="detail" id="detail" hidden></div>
+  <footer id="foot"></footer>
 </main>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <script>
 "use strict";
-const DATA_PATHS = ["../data/", "data/", "./"];
-const GAUGE_IDS = ["G1", "G2", "G3", "G4"];
-const SHORT = {
-  G1: ["US equity", "Sentiment & volatility"], G2: ["US equity", "Fundamental state"],
-  G3: ["AI sector", "Sentiment & volatility"], G4: ["AI sector", "Fundamental health"],
-};
-const SEG_LABELS = { G1: "Equity sentiment", G2: "Equity fundamentals", G3: "AI sentiment", G4: "AI fundamentals" };
-const PILLAR_NAMES = {
-  volatility: "Volatility & options", trend_breadth: "Trend & breadth", credit_funding: "Credit & funding",
-  positioning: "Positioning & surveys", safe_haven: "Safe haven & cross-asset", growth: "Growth & cycle",
-  earnings: "Earnings", valuation: "Valuation", rates_liquidity: "Rates & liquidity", consumer_credit: "Consumer & credit",
-  trend_rs: "Trend & relative strength", implied_vol: "Implied vol & skew", crowding: "Crowding & reaction",
-  attention: "Attention", compute_demand: "Compute demand", spend: "Spend", supply_chain: "Supply chain",
-  monetization: "Monetization", compute_econ: "Compute economics", financing: "Financing & credit",
-};
-const LIGHT_STATUS = { red: ["critical", "Red"], amber: ["warning", "Amber"], green: ["good", "Green"], grey: ["off", "No signal"] };
-const UNWIND_RULES = {
-  capacity_loosens_growth_flat: ["Capacity loosens, growth flat", "Red: H100 rental down >10% over 3 months and (lab Q/Q revenue add falling or token growth < 0). Amber: one leg."],
-  labs_cut_prices: ["Labs cut prices", "Red: flagship token price down >20% in 30 days (same models, so launches don't count) or a price-cut event. Amber: >10%."],
-  hyperscalers_trim_2027_capex: ["Hyperscalers trim 2027 capex", "Red: any of MSFT, GOOGL, AMZN, META frames 2027 capex below prior framing. Amber: two or more hold flat. Green: raised."],
-  ai_credit_spreads_widen: ["AI credit spreads widen", "Red: BBB OAS +25bp in 21 days, ORCL/CRWV drawdown in its worst decile, or a material CDS/financing event. Amber: half thresholds."],
-};
-const AI_FLAGS = {
-  smh_near_high_with_weak_breadth: "SMH within 5% of its high while under half the basket is above its 50-day",
-  basket_correlation_top_decile: "Basket correlation in its top decile",
-  beat_fade_rising_two_seasons: "Beat-and-fade share rising two seasons",
-  iv_spread_rising_with_price: "NVDA IV premium rising while price rises",
-  memory_drawdown_over_25pct: "Memory layer more than 25% below its high",
-};
-const BANNERS = {
-  complacent_and_fragile: ["Complacent and fragile", "G1 ≥ 70 and fragility ≥ 70: the highest-risk combination.", "critical"],
-  fear_without_fundamental_damage: ["Fear without fundamental damage", "G1 ≤ 25 and G2 ≥ 50: historically favorable.", "good"],
-  sentiment_ahead_of_fundamentals: ["Sentiment ahead of fundamentals", "G1 ≥ 70 while G2 has fallen three weeks running.", "warning"],
-};
-const HIDE_TAGS = new Set(["verified", "single-source"]);
-const RANGES = [["1Y", 252], ["5Y", 1260], ["10Y", 2520], ["Max", Infinity]];
+const $ = (s, el = document) => el.querySelector(s);
+const ZC = { buy: "--z1", fear: "--z2", neutral: "--z3", calm: "--z4", caution: "--z5" };
+const HZ = ["1m", "3m", "6m", "12m"];
+const HNAME = { "1m": "1 month", "3m": "3 months", "6m": "6 months", "12m": "12 months" };
+const GRADE = { strong: [3, "Strong evidence"], moderate: [2, "Moderate evidence"], weak: [1, "Weak evidence"], none: [0, "No edge found"] };
+let D = null, H = null, jump = false, view = null, range = "5Y", openInd = null, charts = [], sortKey = null, sortDir = -1, epSide = "buy";
 
-let LATEST = null, HISTORY = null, HCHART = null;
-const state = { gauge: "G1", drivers: "1w", showDisplay: false, more: false, hist: "equity", range: "5Y", legend: { Fragility: false } };
+const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sgn = (v, nd = 1, suf = "%") => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(nd) + suf;
+const fdate = (s, o = { month: "short", day: "numeric", year: "numeric" }) => s ? new Date(s + "T12:00:00").toLocaleDateString("en-US", o) : "—";
+const fval = (i, v = i.value) => v == null ? "—" : (v < 0 ? "−" : "") + Math.abs(v).toFixed(i.nd) + (i.unit === "x" ? "×" : i.unit === "%" ? "%" : i.unit === "pts" ? " pts" : "");
+const sw = key => `<i class="sw" style="background:var(${ZC[key]})"></i>`;
+const dots = g => { const n = (GRADE[g] || GRADE.none)[0]; return `<span class="dots" aria-hidden="true">${"●".repeat(n)}<i>${"●".repeat(3 - n)}</i></span> <span class="grade">${(GRADE[g] || GRADE.none)[1]}</span>`; };
+const bname = g => g.id === "ai" ? "the semiconductor index" : "the S&P 500";
+const signal = z => z.key === "buy" ? `<span class="chip">Buy zone</span>` : z.key === "caution" ? `<span class="chip">Caution zone</span>` : `<span class="chip quiet">No signal</span>`;
 
-/* ----------------------------------------------------------------- helpers */
-const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const band = (v) => v == null ? null : Math.min(4, Math.max(0, Math.floor(v / 20)));
-const bandVar = (v) => v == null ? "var(--grid)" : `var(--b${band(v) + 1})`;
-const isNum = (v) => typeof v === "number" && !Number.isNaN(v);
-const MINUS = "−";
-
-function fmt(v) {
-  if (v === null || v === undefined || Number.isNaN(v)) return "—";
-  if (typeof v === "boolean") return v ? "yes" : "no";
-  if (typeof v !== "number") return String(v);
-  const a = Math.abs(v);
-  let s;
-  if (a >= 1e12) s = (a / 1e12).toFixed(2) + "T";
-  else if (a >= 1e9) s = (a / 1e9).toFixed(2) + "B";
-  else if (a >= 1e6) s = (a / 1e6).toFixed(2) + "M";
-  else if (a >= 1000) s = Math.round(a).toLocaleString("en-US");
-  else if (a >= 100) s = a.toFixed(1);
-  else if (a >= 1) s = a.toFixed(2);
-  else s = a.toFixed(3);
-  return (v < 0 ? MINUS : "") + s;
-}
-const r1 = (v) => Math.round(v * 10) / 10 || 0;   // rounds -0.04 to 0, never -0
-const fmt1 = (v) => isNum(v) ? (r1(v) < 0 ? MINUS : "") + Math.abs(r1(v)).toFixed(1) : "—";
-const signed = (v) => isNum(v) ? (r1(v) > 0 ? "+" : r1(v) < 0 ? MINUS : "") + Math.abs(r1(v)).toFixed(1) : "—";
-const axisFmt = (v) => v >= 1000 ? Math.round(v).toLocaleString("en-US") : String(+v.toPrecision(3));
-const pctS = (v) => isNum(v) ? signed(v) + "%" : "—";
-const dateLbl = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
-const shortDate = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
-const dayDate = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-const when = (iso, opts) => new Date(iso).toLocaleString("en-US", opts);
-const human = (s) => String(s || "").replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
-const pname = (p) => PILLAR_NAMES[p] || human(p);
-const dv = (v) => isNum(v) ? ` data-v="${v}"` : "";
-
-function dbar(v, cls = "") {
-  if (!isNum(v)) return `<span class="dbar ${cls}" aria-hidden="true"></span>`;
-  const lo = v < 50;
-  return `<span class="dbar ${cls}" aria-hidden="true"><b class="${lo ? "lo" : "hi"}" style="left:${Math.min(v, 50)}%;width:${Math.abs(v - 50)}%;background:${bandVar(v)}"></b></span>`;
+function spark(vals) {
+  if (!vals || vals.length < 2) return "";
+  const w = 92, h = 26, x = i => i / (vals.length - 1) * w, y = v => h - 2 - v / 100 * (h - 4);
+  const d = vals.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Score, last 6 months"><line x1="0" x2="${w}" y1="${y(10)}" y2="${y(10)}" stroke="var(--z1)" stroke-width="1" stroke-dasharray="2 3"/><line x1="0" x2="${w}" y1="${y(90)}" y2="${y(90)}" stroke="var(--z5)" stroke-width="1" stroke-dasharray="2 3"/><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
-async function load(name) {
-  for (const base of DATA_PATHS) {
-    try {
-      const r = await fetch(base + name, { cache: "no-cache" });
-      if (r.ok) return await r.json();
-    } catch (e) { /* try the next path */ }
+function oddsLine(g) {
+  const z = g.now.zone.h["3m"], b = g.now.base["3m"];
+  if (!z) return "Too few past readings in this zone to say.";
+  return `After readings like this, ${esc(bname(g))} was higher 3 months later <b>${z.hit}%</b> of the time, median <b>${sgn(z.median)}</b>. <span class="muted">Any day: ${b.hit}%, ${sgn(b.median)}.</span>`;
+}
+
+function gaugeTile(g, sub) {
+  return `<button class="tile" type="button" data-view="${g.id}" aria-expanded="${view === g.id}">
+    <div class="tname"><span>${esc(g.name)}</span><small>${sub}</small></div>
+    <div class="readout"><span class="val num">${g.score.toFixed(0)}<small>/100</small></span><span class="zone">${sw(g.zone.key)}${esc(g.zone.label)}</span>${signal(g.zone)}</div>
+    <div class="scale" aria-hidden="true">${Object.values(ZC).map(c => `<i style="background:var(${c})"></i>`).join("")}<span class="mark" style="left:${g.score}%"></span></div>
+    <div class="ends"><span>Extreme fear · buy</span><span>Complacent · caution</span></div>
+    <div class="odds1">${oddsLine(g)}</div>
+    <div class="tfoot"><div class="d"><span><b>1D</b> ${sgn(g.chg.d1, 0, "")}</span><span><b>1W</b> ${sgn(g.chg.w1, 0, "")}</span><span><b>1M</b> ${sgn(g.chg.m1, 0, "")}</span></div><div class="spark">${spark(g.spark)}</div></div>
+  </button>`;
+}
+
+function ltTile(L) {
+  if (!L) return `<div class="tile" style="cursor:default"><div class="tname"><span>Next 10 years</span></div><div class="odds1">Long-term model unavailable (see Sources).</div></div>`;
+  const e = L.expected;
+  return `<button class="tile" type="button" data-view="lt" aria-expanded="${view === "lt"}">
+    <div class="tname"><span>S&amp;P 500 · next 10 years</span><small>valuation, not timing</small></div>
+    <div class="readout"><span class="val num">${sgn(e.mid)}<small>a year</small></span><span class="zone">${esc(L.zone)}</span></div>
+    <div class="odds1">Expected return implied by valuation. The two models say <b>${sgn(e.low)}</b> and <b>${sgn(e.high)}</b> a year. <span class="muted">Long-run average ${sgn(L.hist_avg)}${L.treasury10 != null ? `; a 10-year Treasury yields ${L.treasury10.toFixed(1)}%` : ""}.</span></div>
+    <div class="tfoot"><div class="d">${L.models.map(m => `<span><b>${esc(m.name.replace("Investor ", "").replace("Shiller ", ""))}</b> ${m.pct.toFixed(0)}th pct</span>`).join("")}</div></div>
+  </button>`;
+}
+
+function renderTiles() {
+  $("#tiles").innerHTML = gaugeTile(D.gauges.spx, "next 1–12 months") + gaugeTile(D.gauges.ai, "next 1–12 months") + ltTile(D.longterm);
+  document.querySelectorAll(".tile[data-view]").forEach(b => b.onclick = () => { jump = view !== b.dataset.view; location.hash = view === b.dataset.view ? "" : b.dataset.view; });
+}
+
+/* ---------------------------------------------------------------- detail */
+function oddsTable(g) {
+  const cell = s => s ? `<td title="Average ${sgn(s.mean)} · middle 80% of outcomes ${sgn(s.p10)} to ${sgn(s.p90)} · ${s.n.toLocaleString()} days">${sgn(s.median)}<small>${s.hit}% up</small></td>` : `<td class="muted">—</td>`;
+  const rows = g.odds.zones.map(z => `<tr class="${z.key === g.zone.key ? "now" : ""}"><td><span class="zl">${sw(z.key)}${esc(z.label)} <small class="muted">${z.lo}–${z.hi}</small></span>${z.key === g.zone.key ? `<span class="badge">now</span>` : ""}</td><td>${z.episodes}<small>${z.days.toLocaleString()} days</small></td>${HZ.map(h => cell(z.h[h])).join("")}</tr>`).join("");
+  return `<div class="card scroll"><table><thead><tr><th>Score zone</th><th>Episodes</th>${HZ.map(h => `<th>${HNAME[h]} later</th>`).join("")}</tr></thead><tbody>${rows}<tr class="allrow"><td>Any day</td><td><small>${g.odds.days.toLocaleString()} days</small></td>${HZ.map(h => cell(g.odds.base[h])).join("")}</tr></tbody></table></div>
+  <p class="note">Median price return of ${esc(bname(g))} after every day the score sat in each zone, and how often it was positive, since ${fdate(g.odds.since, { year: "numeric" })}. Hover a cell for the average and the range. Windows overlap, so days within an episode are not independent: the episode count is the honest sample size.</p>`;
+}
+
+function evCard(title, e, want, benchmark) {
+  const h = e.h["3m"];
+  if (!h) return "";
+  const dir = want === "above" ? "beat" : "lagged";
+  const ok = want === "above" ? h.excess > 0 : h.excess < 0;
+  const halves = h.pre != null && h.post != null ? ` Before 2010: ${sgn(h.pre, 1, "")} pts; since: ${sgn(h.post, 1, "")} pts.` : h.post != null ? ` All of this history is after 2008.` : "";
+  const p = e.p == null ? "" : ` Chance of a gap this large by luck: ${e.p < 0.01 ? "under 1%" : Math.round(e.p * 100) + "%"}.`;
+  return `<div class="card evc"><h4>${title} ${dots(e.grade)}</h4>${e.episodes} episodes. Three months later ${esc(benchmark)} ${ok ? dir : "did not " + (want === "above" ? "beat" : "lag")} its average by ${Math.abs(h.excess).toFixed(1)} points (${sgn(h.mean)} vs ${sgn(h.base_mean)}), up ${h.hit}% of the time vs ${h.base_hit}%.${halves}${p}</div>`;
+}
+
+function indRow(i, cols) {
+  const open = openInd === i.id;
+  const stale = i.stale ? `<span class="badge">stale</span>` : "";
+  let h = `<tr class="ind ${open ? "open" : ""}" data-ind="${i.id}" tabindex="0" aria-expanded="${open}"><td><span class="car">›</span> ${esc(i.name)}${stale}</td><td>${fval(i)}</td><td>${i.score == null ? "—" : `<span class="pos" title="${i.score.toFixed(0)} of 100 (0 = most fearful reading in its history)"><span class="mark" style="left:${i.score}%"></span></span>`}</td><td>${i.score == null ? "—" : i.score.toFixed(0)}</td><td>${i.evidence ? dots(i.evidence.fear.grade) : `<span class="muted">short history</span>`}</td><td class="muted">${fdate(i.as_of, { month: "short", day: "numeric" })}</td></tr>`;
+  if (open) h += `<tr class="exp"><td colspan="${cols}">${indDetail(i)}</td></tr>`;
+  return h;
+}
+
+function indDetail(i) {
+  const e = i.evidence;
+  let ev = `<p class="muted">Not enough history to test on its own.</p>`;
+  if (e) {
+    const row = (lab, s) => `<tr><td style="white-space:normal">${lab}<small>${s.episodes} episodes · ${dots(s.grade)}</small></td>${HZ.map(h => s.h[h] ? `<td title="${sgn(s.h[h].mean)} vs ${sgn(s.h[h].base_mean)} on any day">${sgn(s.h[h].excess, 1, "")}<small>${s.h[h].hit}% up</small></td>` : "<td>—</td>").join("")}</tr>`;
+    ev = `<div class="scroll"><table class="mini"><thead><tr><th>Return vs average, in points</th>${HZ.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${row("Most fearful 10% of readings", e.fear)}${row("Calmest 10% of readings", e.calm)}</tbody></table></div>`;
   }
-  throw new Error(`Could not load ${name}`);
+  return `<div class="expg"><div><p><b>What it is.</b> ${esc(i.what)}</p><p><b>${i.role === "scored" ? "Why it is in the score." : "Why it is not in the score."}</b> ${esc(i.why)}</p>${ev}<p class="muted" style="margin-top:8px">${i.fear === "low" ? "Low readings mean fear. " : "High readings mean fear. "}History from ${fdate(i.since, { year: "numeric" })}. Source: ${esc(i.source)}.</p></div><div><div class="chart sm" id="indchart"></div></div></div>`;
 }
 
-/* ------------------------------------------------------------------ header */
-function themeLabel() {
-  const t = document.documentElement.dataset.theme;
-  return t === "dark" ? "Dark" : t === "light" ? "Light" : "Auto";
-}
-function renderMeta(d) {
-  const gen = d.generated_at, nxt = d.next_refresh_utc;
-  const pt = { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
-  const issues = d.source_issues.length + (d.stale_indicators.length ? 1 : 0);
-  document.getElementById("meta").innerHTML = `
-    <span title="Session the scores describe">Close of <b>${dateLbl(d.as_of)}</b></span>
-    <span title="When this page's data was built">Updated <b>${when(gen, pt)} PT</b></span>
-    <span title="Scheduled refresh: Tue–Sat 02:00 UTC">Next <b>${when(nxt, pt)} PT</b></span>
-    <details class="pop" id="issues"><summary class="iconbtn issues-btn"><span class="sdot ${issues ? "warning" : "good"}"></span>${issues ? `${issues} data issue${issues > 1 ? "s" : ""}` : "All sources OK"}</summary>
-      <div class="panel">
-        <h4>Sources not fully OK (latest run)</h4>
-        <ul>${d.source_issues.map((s) => `<li><b>${esc(s.source)}</b> · ${esc(s.status)}${s.latest_obs && s.latest_obs !== "NaT" ? ` · latest ${esc(s.latest_obs)}` : ""}<div class="msg">${esc(s.message)}</div></li>`).join("") || "<li>None</li>"}</ul>
-        <h4>Stale inputs (weight decaying)</h4>
-        <ul>${d.stale_indicators.map((s) => `<li>${esc(s.id)} · as of ${esc(s.as_of)}</li>`).join("") || "<li>None</li>"}</ul>
-        <div class="msg">Mean coverage across the four gauges: ${fmt1(d.global_coverage)}%</div>
-      </div></details>
-    <button class="iconbtn" id="themebtn" title="Color theme: auto follows your system">${themeLabel()}</button>`;
-  document.getElementById("themebtn").addEventListener("click", cycleTheme);
+function indTable(g, role) {
+  const list = g.indicators.filter(i => i.role === role), cols = 6;
+  let body = "";
+  if (role === "scored") for (const p of g.pillars) body += `<tr class="grp"><td colspan="${cols}">${esc(p.name)} · ${p.score.toFixed(0)}</td></tr>` + list.filter(i => i.pillar === p.name).map(i => indRow(i, cols)).join("");
+  else body = list.map(i => indRow(i, cols)).join("");
+  return `<div class="card scroll"><table><thead><tr><th>${role === "scored" ? "Input" : "Metric"}</th><th>Now</th><th>Fear ← → Calm</th><th>Rank</th><th>Evidence as a buy signal</th><th>As of</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
-function cycleTheme() {
-  const order = ["auto", "light", "dark"];
-  const cur = (document.documentElement.dataset.theme || "auto");
-  const next = order[(order.indexOf(cur) + 1) % order.length];
-  if (next === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
-  try { if (next === "auto") localStorage.removeItem("mg-theme"); else localStorage.setItem("mg-theme", next); } catch (e) { /* ignore */ }
-  document.getElementById("themebtn").textContent = themeLabel();
-  renderHistory();
+function episodesTable(g) {
+  const list = g.episodes[epSide] || [];
+  const c = v => v == null ? `<td class="muted">—</td>` : `<td>${sgn(v)}</td>`;
+  const rows = list.map(e => `<tr><td>${fdate(e.start)}${e.open ? `<span class="badge">open</span>` : ""}</td><td>${e.days}</td><td>${e.extreme.toFixed(0)}</td>${HZ.map(h => c(e[h])).join("")}<td>${sgn(e.worst)}</td></tr>`).join("");
+  return `<div class="card scroll" style="max-height:420px;overflow-y:auto"><table><thead><tr><th>First day in zone</th><th>Days</th><th>${epSide === "buy" ? "Lowest" : "Highest"} score</th>${HZ.map(h => `<th>+${h}</th>`).join("")}<th>Worst point, next 6m</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="muted">None yet.</td></tr>`}</tbody></table></div>
+  <p class="note">Price return of ${esc(bname(g))} from the close of the first day in the zone. Visits less than a month apart count as one episode. "Worst point" is the lowest close over the following six months, relative to that first day.</p>`;
 }
 
-/* ---------------------------------------------------------------- overview */
-function sparkSvg(values) {
-  const n = values.length;
-  if (n < 2 || values.every((v) => v == null)) return "";
-  const W = 200, H = 34, y = (v) => H - 2 - v / 100 * (H - 4);
-  let d = "", pen = false;
-  values.forEach((v, i) => {
-    if (v == null) { pen = false; return; }
-    d += `${pen ? "L" : "M"}${(i / (n - 1) * W).toFixed(1)} ${y(v).toFixed(1)}`;
-    pen = true;
-  });
-  let li = n - 1;
-  while (li > 0 && values[li] == null) li--;
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-      <line x1="0" x2="${W}" y1="${y(50)}" y2="${y(50)}" style="stroke:var(--grid)" stroke-width="1" vector-effect="non-scaling-stroke"/>
-      <path d="${d}" fill="none" style="stroke:var(--ink-2)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-    </svg><span class="dot" style="left:${li / (n - 1) * 100}%;top:${y(values[li]) / H * 100}%"></span>`;
+function aiContext() {
+  const A = D.ai_context || {}, rows = (A.companies || []).slice();
+  if (sortKey) rows.sort((a, b) => { const x = a[sortKey], y = b[sortKey]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * sortDir; });
+  const cols = [["ticker", "Ticker"], ["layer", "Layer"], ["ret_1w", "1W"], ["ret_1m", "1M"], ["ret_3m", "3M"], ["ret_ytd", "YTD"], ["from_high", "From 52w high"], ["eps_surprise", "EPS surprise"], ["rev_growth", "Revenue TTM YoY"], ["next_report", "Next report"]];
+  const cell = (k, v) => v == null ? `<td class="muted">—</td>` : k === "ticker" ? `<td><b>${esc(v)}</b></td>` : k === "layer" ? `<td style="text-align:left" class="ink2">${esc(v)}</td>` : k === "next_report" ? `<td>${fdate(v, { month: "short", day: "numeric" })}</td>` : `<td>${sgn(v)}</td>`;
+  const tbl = rows.length ? `<div class="card scroll"><table><thead><tr>${cols.map(([k, n]) => `<th class="sortable" data-sort="${k}" style="${k === "layer" ? "text-align:left" : ""}">${n}${sortKey === k ? (sortDir > 0 ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(([k]) => cell(k, r[k])).join("")}</tr>`).join("")}</tbody></table></div><p class="note">Price returns in local currency (Yahoo). EPS surprise for the latest quarter and trailing revenue growth from Finnhub (US listings only). None of this feeds the score.</p>` : `<p class="note">No company data.</p>`;
+  const cats = (A.catalysts || []).length ? `<div class="card cat">${A.catalysts.map(c => `<span class="d">${fdate(c.date, { weekday: "short", month: "short", day: "numeric" })}</span><span>${esc(c.label)}</span>`).join("")}</div>` : `<p class="note">Nothing scheduled in the next 30 days.</p>`;
+  const g = A.gpu_spot;
+  const gpu = g ? `<div class="card"><div class="chart sm" id="gpuchart"></div></div><p class="note">Equal-weight index of Nebius pre-emptible GPU spot prices (${g.series} platform and region series; 100 = ${fdate(g.since)}). Now ${g.value.toFixed(0)}${g.chg_1w != null ? `, ${sgn(g.chg_1w)} over a week` : ""}. Falling prices mean spare compute. Only ${g.days} days of history, so it cannot be tested yet and is not in the score.</p>` : `<p class="note">No GPU spot data.</p>`;
+  return `<details class="fold" data-fold="co"><summary>AI companies <span class="sub">${rows.length} names · performance and earnings</span></summary><div class="inner">${tbl}</div></details>
+  <details class="fold" data-fold="cat"><summary>Catalysts <span class="sub">next 30 days</span></summary><div class="inner">${cats}</div></details>
+  <details class="fold" data-fold="gpu"><summary>GPU spot prices <span class="sub">compute demand, context only</span></summary><div class="inner">${gpu}</div></details>`;
 }
 
-function tile(id, g) {
-  const [, title] = SHORT[id];
-  const prev = g.ghosts.prev_close;
-  const d1 = prev == null || g.display == null ? null : g.display - prev;
-  const hist = HISTORY ? HISTORY.gauges[id].display.slice(-126) : [];
-  const b = band(g.display);
-  const tip = `${g.name}: ${fmt1(g.display)} ${g.band || ""}${g.smoothing === "ema3" ? ` (3-day EMA; raw ${fmt1(g.score)})` : ""} · as of ${g.as_of} · coverage ${fmt1(g.coverage)}%`;
-  return `<article class="tile" role="button" tabindex="0" data-g="${id}" aria-pressed="${state.gauge === id}" title="${esc(tip)}">
-    <div class="tname">${esc(title)} <span class="muted">· ${id}</span></div>
-    <div class="readout"><span class="val">${fmt1(g.display)}</span>
-      <span class="bandlbl"><span class="sw" style="background:${bandVar(g.display)}"></span>${esc(g.band || "No score")}</span></div>
-    <div class="scale" aria-hidden="true">${[0, 1, 2, 3, 4].map((i) => `<i style="${i === b ? `background:var(--b${i + 1})` : ""}"></i>`).join("")}
-      ${g.display == null ? "" : `<span class="mark" style="left:${g.display}%"></span>`}</div>
-    <div class="ends"><span>${esc(g.scale[0])}</span><span>${esc(g.scale[4])}</span></div>
-    <div class="deltas"><span><b>1D</b>${signed(d1)}</span><span><b>1W</b>${signed(g.change_1w)}</span><span><b>1M</b>${signed(g.change_1m)}</span></div>
-    <div class="spark">${sparkSvg(hist)}</div>
-    <div class="tfoot"><span>6 months</span>${g.low_coverage
-      ? `<span class="low" title="Live share of target weight is below 70%"><span class="sdot warning"></span>Low coverage ${fmt1(g.coverage)}%</span>`
-      : `<span title="Live share of target weight">Coverage ${fmt1(g.coverage)}%</span>`}</div>
-  </article>`;
+const folds = new Set();
+function gaugeDetail(g) {
+  const cov = g.coverage.live < g.coverage.of ? ` Only ${g.coverage.live} of ${g.coverage.of} inputs are live.` : "";
+  const z3 = g.now.zone.h["3m"];
+  return `<div class="dhead"><h2>${esc(g.name)}</h2><span class="zone">${sw(g.zone.key)}${g.score.toFixed(1)} · ${esc(g.zone.label)}</span>${signal(g.zone)}<a class="x" href="#">Close</a></div>
+  <p class="dsub">${g.zone_days} session${g.zone_days === 1 ? "" : "s"} in this zone. ${esc(g.benchmark)} ${g.price.toLocaleString()}, ${sgn(g.price_chg.d1, 2)} on the day, ${sgn(g.price_chg.from_high)} from its 52-week high.${cov}${z3 ? ` In this zone the middle 80% of 3-month outcomes ran from <b>${sgn(z3.p10)}</b> to <b>${sgn(z3.p90)}</b>.` : ""}</p>
+  <section class="blk" style="margin-top:0"><div class="bh"><h3>What happened next</h3><span class="sub">every day since ${fdate(g.odds.since, { year: "numeric" })}, grouped by score</span></div>${oddsTable(g)}
+    <div class="ev">${evCard("Buy side · score 10 or lower", g.evidence.fear, "above", bname(g))}${evCard("Sell side · score 90 or higher", g.evidence.calm, "below", bname(g))}</div></section>
+  <section class="blk"><div class="bh"><h3>History</h3><span class="sub">score above, ${esc(bname(g))} below</span><div class="right seg" id="rangeseg">${["1Y", "5Y", "10Y", "Max"].map(r => `<button type="button" aria-pressed="${r === range}" data-range="${r}">${r}</button>`).join("")}</div></div>
+    <div class="card"><div class="chart" id="hist"></div><div class="legend"><span><i class="sw" style="background:var(--z1);opacity:.45"></i>Buy zone (score ≤ 10)</span><span><i class="sw" style="background:var(--z5);opacity:.45"></i>Caution zone (score ≥ 90)</span><span><i class="sw" style="background:var(--z1);opacity:.3"></i>On the price chart: days spent in the buy zone</span></div></div></section>
+  <section class="blk"><div class="bh"><h3>What is in the score</h3><span class="sub">${g.coverage.of} inputs, each ranked against its own history · select a row for its chart and its own track record</span></div>${indTable(g, "scored")}
+    <p class="note">Rank: 0 is the most fearful reading in the input's history up to that day, 100 the calmest. The score averages the ranks within each group, then the groups, and ranks the result the same way. An input's own evidence can be weak while the combination is strong: single inputs are noisy.</p></section>
+  <details class="fold" data-fold="ctx" ${folds.has("ctx") ? "open" : ""}><summary>Tested, not scored <span class="sub">${g.indicators.filter(i => i.role === "context").length} metrics, with the reason each was left out</span></summary><div class="inner">${indTable(g, "context")}</div></details>
+  <details class="fold" data-fold="ep" ${folds.has("ep") ? "open" : ""}><summary>Past signals <span class="sub">${g.episodes.buy.length} buy-zone and ${g.episodes.caution.length} caution-zone episodes</span></summary><div class="inner"><div class="seg" id="epseg" style="margin-bottom:10px"><button type="button" aria-pressed="${epSide === "buy"}" data-ep="buy">Buy zone</button><button type="button" aria-pressed="${epSide === "caution"}" data-ep="caution">Caution zone</button></div>${episodesTable(g)}</div></details>
+  ${g.id === "ai" ? aiContext() : ""}`;
 }
 
-function renderOverview(d) {
-  const groups = [["US equity · S&P 500", ["G1", "G2"]], ["AI sector", ["G3", "G4"]]];
-  document.getElementById("overview").innerHTML = groups.map(([label, ids]) =>
-    `<div class="group"><h3>${esc(label)}</h3><div class="tiles">${ids.map((id) => tile(id, d.gauges[id])).join("")}</div></div>`).join("");
-  document.querySelectorAll(".tile").forEach((el) => {
-    const pick = () => { selectGauge(el.dataset.g); document.getElementById("detail-block").scrollIntoView({ behavior: "smooth", block: "start" }); };
-    el.addEventListener("click", pick);
-    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
-  });
-}
-
-function renderAlerts(d) {
-  const out = [];
-  if (d.unwind.alert) out.push(`<div class="alert"><span class="sdot critical"></span><div><b>AI unwind alert</b> · ${d.unwind.red_count} of 4 unwind lights are red.</div></div>`);
-  for (const b of d.banners) {
-    const [t, rule, s] = BANNERS[b] || [b, "", "warning"];
-    out.push(`<div class="alert"><span class="sdot ${s}"></span><div><b>${esc(t)}</b> · ${esc(rule)}</div></div>`);
-  }
-  document.getElementById("alerts").innerHTML = out.join("");
-}
-
-/* ------------------------------------------------------------------ detail */
-function selectGauge(id) {
-  state.gauge = id;
-  try { history.replaceState(null, "", "#" + id); } catch (e) { /* file:// */ }
-  document.querySelectorAll(".tile").forEach((el) => el.setAttribute("aria-pressed", String(el.dataset.g === id)));
-  renderDetail();
-}
-
-function gaugeExtras(id, d) {
-  const g = d.gauges[id];
-  if (id === "G1") {
-    const f = d.fragility;
-    return `<section><h4>Alongside G1</h4><div class="kv">
-      <span>Fragility overlay <a href="#signals" class="muted">(see risk signals)</a></span><span class="num">${fmt1(f.score)}</span>
-      <span title="Equal weight of the seven CNN-style rows (${esc(d.cnn_rows.join(", "))}). CNN uses NYSE breadth; this uses S&amp;P 500 members.">CNN-method replica</span><span class="num">${fmt1(d.cnn_replica)}</span>
-    </div></section>`;
-  }
-  if (id === "G2" && g.infl_penalty) {
-    return `<section><h4>Adjustment</h4><div class="kv"><span>Core PCE above 3%: penalty on rates &amp; liquidity</span><span class="num">${MINUS}${fmt1(g.infl_penalty)}</span></div></section>`;
-  }
-  if (id === "G3") {
-    const flags = Object.values(d.ai_fragility);
-    return `<section><h4>Alongside G3</h4><div class="kv"><span>AI fragility flags <a href="#signals" class="muted">(see risk signals)</a></span><span class="num">${flags.filter((v) => v === true).length} of ${flags.length} on</span></div></section>`;
-  }
-  if (id === "G4" && d.open_weight_token_share != null) {
-    return `<section><h4>Alongside G4</h4><div class="kv"><span title="Tokens from models with published weights, among models matched to the catalog. Source: OpenRouter rankings (CC BY 4.0).">Open-weight share of OpenRouter tokens</span><span class="num">${fmt1(d.open_weight_token_share)}%</span></div></section>`;
-  }
-  return "";
-}
-
-function miniSpark(points) {
-  const pts = (points || []).map((v) => v == null ? null : v);
-  if (pts.filter((v) => v != null).length < 2) return "";
-  const w = 72, h = 18, n = pts.length;
-  let d = "", pen = false;
-  pts.forEach((v, i) => {
-    if (v == null) { pen = false; return; }
-    d += `${pen ? "L" : "M"}${(i / (n - 1) * w).toFixed(1)} ${(h - 2 - v / 100 * (h - 4)).toFixed(1)}`;
-    pen = true;
-  });
-  return `<svg class="mspark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" style="stroke:var(--grid)"/><path d="${d}" fill="none" style="stroke:var(--ink-2)" stroke-width="1.3"/></svg>`;
-}
-
-function componentRows(id, g) {
-  const greedy = id === "G1" || id === "G3";
-  const rows = [];
-  for (const p of Object.keys(g.pillars)) {
-    const members = g.components.filter((c) => c.pillar === p);
-    const active = members.filter((c) => c.active).sort((a, b) => (b.target_weight - a.target_weight) || a.name.localeCompare(b.name));
-    const shown = state.showDisplay ? [...active, ...members.filter((c) => !c.active)] : active;
-    if (!shown.length) continue;
-    rows.push(`<tr class="grp"><th colspan="12">${esc(pname(p))}<span>${g.pillar_weights[p]}% of gauge · score ${fmt1(g.pillars[p])}</span></th></tr>`);
-    for (const c of shown) {
-      const tags = c.badges.filter((b) => !HIDE_TAGS.has(b)).map((b) => `<span class="tag">${esc(b.replace("-", " "))}</span>`).join("")
-        + (c.validation ? `<span class="tag" title="${esc(c.validation)}">validated out</span>` : "");
-      const trust = c.badges.includes("verified") ? "cross-checked against a second source" : c.badges.includes("single-source") ? "single source" : "";
-      rows.push(`<tr class="${c.active ? "" : "inactive"}">
-        <td class="name" title="${esc(c.id)}${c.notes ? " — " + esc(c.notes) : ""}">${esc(c.name)}${tags}</td>
-        <td class="opt ink2">${esc(c.role)}${c.cnn ? " · CNN row" : ""}${c.fragility ? " · fragility" : ""}</td>
-        <td class="r num opt" title="${esc(c.source)}${c.as_of ? " · observation " + c.as_of : ""}${c.published ? " · public " + c.published : ""}">${fmt(c.value)}</td>
-        <td class="r num opt" title="Percentile within its trailing window">${fmt1(c.pct)}</td>
-        <td class="r num" title="Oriented score: 100 = ${greedy ? "greed" : "healthy"}">${fmt1(c.score)}${dbar(c.score, "mini")}</td>
-        <td class="r num" title="Live weight after staleness and status multipliers / target weight, % of the gauge">${c.active ? `${fmt1(c.live_weight)}<span class="muted"> / ${fmt1(c.target_weight)}</span>` : `<span class="muted">display</span>`}</td>
-        <td class="r num" title="Points this indicator contributes to the gauge">${fmt1(c.contribution)}</td>
-        <td class="r num">${signed(c.change_1w)}</td>
-        <td class="r num opt">${signed(c.change_1m)}</td>
-        <td class="opt" title="Score, last 6 months">${miniSpark(c.spark)}</td>
-        <td class="num">${c.as_of ? shortDate(c.as_of) : "—"}</td>
-        <td title="${esc(c.source)}${trust ? " · " + trust : ""}">${c.source_url ? `<a href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.source.length > 26 ? c.source.slice(0, 25) + "…" : c.source)}</a>` : `<span class="muted">${esc(c.source)}</span>`}</td>
-      </tr>`);
-    }
-  }
-  return rows.join("");
-}
-
-function renderDetail() {
-  const d = LATEST, id = state.gauge, g = d.gauges[id];
-  document.getElementById("gsel").innerHTML = GAUGE_IDS.map((x) =>
-    `<button data-g="${x}" aria-pressed="${x === id}">${x} · ${SEG_LABELS[x]}</button>`).join("");
-  document.querySelectorAll("#gsel button").forEach((b) => b.addEventListener("click", () => selectGauge(b.dataset.g)));
-
-  const live = g.components.filter((c) => c.active && c.live_weight > 0).length;
-  const total = g.components.filter((c) => c.active).length;
-  const nDisplay = g.components.filter((c) => !c.active).length;
-  const name = (cid) => (g.components.find((c) => c.id === cid) || {}).name || cid;
-  const drivers = state.drivers === "1w" ? g.drivers_1w : g.drivers_1m;
-
-  const pillars = Object.entries(g.pillars).map(([p, v]) => `
-    <div class="prow" title="${esc(pname(p))}: ${v == null ? "no live inputs" : fmt1(v)} · pillar weight ${g.pillar_weights[p]}%">
-      <span class="pn">${esc(pname(p))}<small>${g.pillar_weights[p]}%</small></span>${dbar(v)}<span class="pv num">${fmt1(v)}</span></div>`).join("");
-
-  document.getElementById("detail").innerHTML = `
-    <p class="summary"><b>${esc(g.name)}</b> · ${fmt1(g.display)} ${esc(g.band || "")}${g.smoothing === "ema3" ? ` · 3-day EMA (raw ${fmt1(g.score)})` : ""} · ${live} of ${total} indicators live · coverage ${fmt1(g.coverage)}% · as of ${dateLbl(g.as_of)}</p>
-    <div class="detail">
-      <div class="panelcol">
-        <section><h4>Pillars <span class="muted" style="font-weight:400">bars run from 50 (neutral)</span></h4>${pillars}</section>
-        <section><h4>What moved it, in gauge points
-          <span class="seg" id="drvsel"><button data-k="1w" aria-pressed="${state.drivers === "1w"}">1W</button><button data-k="1m" aria-pressed="${state.drivers === "1m"}">1M</button></span></h4>
-          ${drivers.length ? drivers.map((x) => `<div class="drow"><span>${esc(name(x.id))}</span><span class="num">${signed(x.change)}</span></div>`).join("") : `<div class="drow"><span>No change</span><span></span></div>`}
-        </section>
-        ${gaugeExtras(id, d)}
-      </div>
-      <div>
-        <div class="tablewrap"><table class="data ${state.more ? "all" : ""}" id="comptable">
-          <thead><tr><th>Indicator</th><th class="opt">Role</th><th class="r opt">Value</th><th class="r opt">Pctile</th><th class="r">Score</th><th class="r">Weight %</th><th class="r">Points</th><th class="r">1W</th><th class="r opt">1M</th><th class="opt">6M</th><th>As of</th><th>Source</th></tr></thead>
-          <tbody>${componentRows(id, g)}</tbody></table></div>
-        <div class="tblbar">
-          <button class="linkbtn" id="morecols">${state.more ? "Fewer columns" : "More columns"}</button>
-          ${nDisplay ? `<button class="linkbtn" id="showdisp">${state.showDisplay ? "Hide" : "Show"} ${nDisplay} display-only indicator${nDisplay > 1 ? "s" : ""}</button>` : ""}
-          <span class="muted" style="font-size:12px">Score: 100 = ${id === "G1" || id === "G3" ? "greed" : "healthy"}. Points sum to the gauge.</span>
-        </div>
-      </div>
-    </div>`;
-  document.querySelectorAll("#drvsel button").forEach((b) => b.addEventListener("click", () => { state.drivers = b.dataset.k; renderDetail(); }));
-  document.getElementById("morecols").addEventListener("click", () => { state.more = !state.more; renderDetail(); });
-  const sd = document.getElementById("showdisp");
-  if (sd) sd.addEventListener("click", () => { state.showDisplay = !state.showDisplay; renderDetail(); });
-}
-
-/* ----------------------------------------------------------------- signals */
-function renderSignals(d) {
-  const f = d.fragility;
-  const comps = Object.values(d.gauges).flatMap((g) => g.components);
-  const members = f.members.map((mid) => comps.find((c) => c.id === mid)).filter(Boolean).map((c) => {
-    const frag = c.pct == null ? null : (c.fragility === "higher_is_fragile" ? c.pct : 100 - c.pct);
-    return `<div class="mrow" title="${esc(c.name)}: fragility reading ${fmt1(frag)} · as of ${c.as_of || "—"}"><span>${esc(c.name)}</span><span class="mtrack"><b style="width:${frag ?? 0}%"></b></span><span class="num" style="text-align:right">${fmt1(frag)}</span></div>`;
+function ltDetail(L) {
+  const rows = L.models.map(m => {
+    const open = openInd === m.id;
+    let h = `<tr class="ind ${open ? "open" : ""}" data-ind="${m.id}" tabindex="0" aria-expanded="${open}"><td><span class="car">›</span> ${esc(m.name)}</td><td>${fval(m)}<small>official ${fval(m, m.official)}, ${esc(m.official_as_of)}</small></td><td>${m.pct.toFixed(0)}th<small>of its history</small></td><td><b>${sgn(m.pred)}</b><small>± ${m.se.toFixed(1)} typical miss</small></td><td>${Math.round(m.r2 * 100)}%<small>of variation explained</small></td><td>${m.oos.mae != null ? `${m.oos.mae.toFixed(1)} pts<small>vs ${m.oos.mae_naive.toFixed(1)} using the average</small>` : "—"}</td></tr>`;
+    if (open) h += `<tr class="exp"><td colspan="6"><div class="expg"><div><p><b>What it is.</b> ${esc(m.what)}</p><p><b>Why it is here.</b> ${esc(m.why)}</p>${m.extrapolated ? `<p><b>Outside its history.</b> Today's reading is above every value the model was fitted on (previous high ${fval(m, m.hist_max)}, ${fdate(m.hist_max_date, { month: "short", year: "numeric" })}), so the estimate is an extrapolation.</p>` : ""}<p class="muted">Fitted on 10-year windows starting ${m.since} or later. Out-of-sample check: refit at each date using only windows that had already finished (${m.oos.n} forecasts since ${fdate(m.oos.from, { year: "numeric" })}, correlation with the outcome ${m.oos.corr}). Source: ${esc(m.source)}.</p></div><div><div class="chart md" id="indchart"></div><div class="legend" style="padding:6px 0 0"><span><i class="ln" style="background:var(--s1)"></i>Model's estimate at the time</span><span><i class="ln" style="background:var(--s2)"></i>What the next 10 years delivered</span></div></div></div></td></tr>`;
+    return h;
   }).join("");
-  const prob = typeof f.drawdown_probability === "string"
-    ? `${esc(f.drawdown_probability)}: the backtest found no reliable link between this overlay and later 10%+ drawdowns, so no probability is shown.`
-    : `${f.drawdown_probability.probability_pct}% of days in this decile saw a 10%+ S&amp;P drawdown within 63 trading days (${f.drawdown_probability.sample_days} days).`;
-  const r = f.divergence_rule;
-  document.getElementById("fragility").innerHTML = `
-    <h3>Equity fragility overlay</h3>
-    <p class="lede">0 calm · 100 fragile. ${prob}</p>
-    <div class="bignum">${fmt1(f.score)}</div>
-    <div class="meter" aria-hidden="true"><b style="width:${f.score ?? 0}%"></b></div>
-    <div class="srow" style="margin-top:8px"><span class="sdot ${f.breadth_divergence ? "serious" : "off"}"></span>
-      <span>Breadth divergence<small>S&amp;P within ${r.near_high_pct}% of its 52-week high while under ${r.breadth_below}% of members are above their 200-day</small></span>
-      <span class="st">${f.breadth_divergence ? "On" : "Off"}</span></div>
-    <div class="subhead">Members (fragility reading)</div>${members}`;
-
-  const u = d.unwind;
-  const show = (x) => x && typeof x === "object" ? (Object.keys(x).length ? Object.entries(x).map(([a, b]) => `${a} ${b}`).join(", ") : "none yet") : fmt(x);
-  const lights = Object.entries(u.lights).map(([k, v]) => {
-    const [title, rule] = UNWIND_RULES[k] || [human(k), ""];
-    const [cls, word] = LIGHT_STATUS[v.state] || ["off", v.state];
-    const inputs = Object.entries(v).filter(([n]) => n !== "state").map(([n, x]) => `${n.replaceAll("_", " ")}: ${show(x)}`).join(" · ");
-    return `<div class="srow" title="${esc(rule)}"><span class="sdot ${cls}"></span><span>${esc(title)}<small>${esc(inputs)}</small></span><span class="st">${esc(word)}</span></div>`;
-  }).join("");
-  const flags = Object.entries(d.ai_fragility).map(([k, v]) =>
-    `<div class="srow"><span class="sdot ${v === true ? "serious" : "off"}"></span><span>${esc(AI_FLAGS[k] || human(k))}</span><span class="st">${v === true ? "On" : v === false ? "Off" : "No data"}</span></div>`).join("");
-  document.getElementById("unwind").innerHTML = `
-    <h3>AI unwind signature · ${u.red_count} of 4 red</h3>
-    <p class="lede">One weak print is noise; the signal is these turning red together. Hover a row for its rule.</p>
-    ${lights}
-    <div class="subhead">AI fragility flags</div>${flags}`;
+  const e = L.expected;
+  return `<div class="dhead"><h2>S&amp;P 500 · next 10 years</h2><span class="zone">${sgn(e.mid)} a year · ${esc(L.zone)}</span><a class="x" href="#">Close</a></div>
+  <p class="dsub">What today's valuation has historically meant for the following decade, as a nominal total return (dividends included, before inflation). This layer moves slowly and says nothing about the next year: expensive markets have stayed expensive for a long time. Use it to set expectations and overall exposure, and the tactical gauges for timing.</p>
+  <div class="kv"><div class="card"><div class="k">Expected, next 10 years</div><div class="v num">${sgn(e.mid)}</div><div class="s">a year, average of the two models</div></div><div class="card"><div class="k">Model range</div><div class="v num">${sgn(e.low, 1, "")} to ${sgn(e.high)}</div><div class="s">a year</div></div><div class="card"><div class="k">Long-run average</div><div class="v num">${sgn(L.hist_avg)}</div><div class="s">a year, 10-year windows since 1951</div></div><div class="card"><div class="k">10-year Treasury</div><div class="v num">${L.treasury10 != null ? L.treasury10.toFixed(2) + "%" : "—"}</div><div class="s">the alternative, held to maturity</div></div></div>
+  <section class="blk"><div class="bh"><h3>The two models</h3><span class="sub">select a row for its history</span></div>
+  <div class="card scroll"><table><thead><tr><th>Measure</th><th>Today</th><th>Percentile</th><th>Implied 10-year return</th><th>Fit</th><th>Average miss, out of sample</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="note">Each model is a one-variable regression of the subsequent 10-year return on the measure. Ten-year windows overlap heavily, so there are only about seven independent decades behind these fits and the true uncertainty is wider than "typical miss" suggests. Today's values are moved from the last official figure with the S&amp;P 500's change since.</p></section>`;
 }
 
-/* ----------------------------------------------------------------- history */
-function renderHistMode() {
-  document.getElementById("histmode").innerHTML = [["equity", "Equity · S&P 500"], ["ai", "AI · SMH"]].map(([k, l]) =>
-    `<button data-k="${k}" aria-pressed="${state.hist === k}">${l}</button>`).join("");
-  document.getElementById("histrange").innerHTML = RANGES.map(([k]) => `<button data-k="${k}" aria-pressed="${state.range === k}">${k}</button>`).join("");
-  document.querySelectorAll("#histmode button").forEach((b) => b.addEventListener("click", () => { state.hist = b.dataset.k; renderHistMode(); renderHistory(); }));
-  document.querySelectorAll("#histrange button").forEach((b) => b.addEventListener("click", () => { state.range = b.dataset.k; renderHistMode(); renderHistory(); }));
-}
+/* ---------------------------------------------------------------- charts */
+function dispose() { charts.forEach(c => c.dispose()); charts = []; }
+function mk(el) { const c = echarts.init(el, null, { renderer: "canvas" }); charts.push(c); return c; }
+const cutoff = () => { if (range === "Max") return null; const d = new Date(D.as_of + "T12:00:00"); d.setFullYear(d.getFullYear() - parseInt(range)); return d.toISOString().slice(0, 10); };
+const base = () => ({ ink: tok("--ink"), ink2: tok("--ink-2"), muted: tok("--muted"), grid: tok("--grid"), surface: tok("--surface"), z1: tok("--z1"), z5: tok("--z5"), s1: tok("--s1"), s2: tok("--s2") });
+const axisCommon = c => ({ axisLine: { lineStyle: { color: c.grid } }, axisTick: { show: false }, axisLabel: { color: c.muted, fontSize: 11 }, splitLine: { lineStyle: { color: c.grid } } });
+const tipCommon = c => ({ backgroundColor: c.surface, borderColor: c.grid, borderWidth: 1, textStyle: { color: c.ink, fontSize: 12 }, extraCssText: "box-shadow:0 6px 20px rgba(0,0,0,.14);border-radius:8px;" });
 
-function rangeStart() {
-  const n = (RANGES.find(([k]) => k === state.range) || RANGES[1])[1];
-  return Math.max(0, 100 - n / HISTORY.dates.length * 100);
-}
-
-function renderHistory() {
-  if (!HISTORY) return;
-  const h = HISTORY, eq = state.hist === "equity", key = eq ? "spx" : "smh";
-  const el = document.getElementById("histchart");
-  if (!HCHART) {
-    HCHART = echarts.init(el);
-    HCHART.on("legendselectchanged", (e) => { state.legend = e.selected; });
-  }
-  const logScale = state.range === "Max";
-  const priceName = eq ? "S&P 500" : "SMH";
-  const lines = eq
-    ? [["G1 sentiment", h.gauges.G1.display, "--s1"], ["G2 fundamentals", h.gauges.G2.display, "--s2"], ["Fragility", h.fragility, "--s3"]]
-    : [["G3 AI sentiment", h.gauges.G3.display, "--s1"], ["G4 AI fundamentals", h.gauges.G4.display, "--s2"]];
-  document.getElementById("histnote").textContent = `Shaded: ${priceName} declines of 10% or more, peak to recovery`;
-  const ax = { axisLine: { lineStyle: { color: css("--base") } }, axisTick: { show: false }, axisLabel: { color: css("--muted"), fontSize: 11 }, splitLine: { lineStyle: { color: css("--grid"), width: 1 } } };
-  const shade = h.drawdowns[key].map(([a, b]) => [{ xAxis: a }, { xAxis: b }]);
-  const font = getComputedStyle(document.body).fontFamily;
-  HCHART.setOption({
-    animation: false,
-    textStyle: { fontFamily: font, color: css("--ink-2") },
-    legend: { top: 0, left: 0, icon: "roundRect", itemWidth: 14, itemHeight: 3, itemGap: 18, textStyle: { color: css("--ink-2"), fontSize: 12 },
-      inactiveColor: css("--base"), inactiveBorderColor: css("--base"),
-      data: [priceName, ...lines.map((l) => l[0])], selected: state.legend },
-    axisPointer: { link: [{ xAxisIndex: "all" }], lineStyle: { color: css("--base") } },
-    tooltip: { trigger: "axis", backgroundColor: css("--surface"), borderColor: css("--ring"), extraCssText: "box-shadow:0 8px 24px rgba(0,0,0,.14);border-radius:8px;",
-      textStyle: { color: css("--ink"), fontSize: 12 }, valueFormatter: (v) => v == null ? "—" : fmt(v) },
-    grid: [{ left: 48, right: 12, top: el.clientWidth < 560 ? 64 : 40, height: "26%" }, { left: 48, right: 12, top: "48%", bottom: 26 }],
-    xAxis: [
-      { type: "category", gridIndex: 0, data: h.dates, ...ax, axisLabel: { show: false }, splitLine: { show: false } },
-      { type: "category", gridIndex: 1, data: h.dates, ...ax, splitLine: { show: false } },
-    ],
-    yAxis: [
-      { type: logScale ? "log" : "value", gridIndex: 0, scale: true, ...ax, splitNumber: 3, axisLine: { show: false },
-        axisLabel: { color: css("--muted"), fontSize: 11, formatter: axisFmt, showMinLabel: !logScale, showMaxLabel: false } },
-      { type: "value", gridIndex: 1, min: 0, max: 100, interval: 20, ...ax, axisLine: { show: false } },
-    ],
-    dataZoom: [{ type: "inside", xAxisIndex: [0, 1], start: rangeStart(), end: 100 }],
+function histChart(g) {
+  const el = $("#hist"); if (!el || !H) return;
+  const h = H[g.id], c = base(), cut = cutoff();
+  const i0 = cut ? Math.max(0, h.dates.findIndex(d => d >= cut)) : 0;
+  const dates = h.dates.slice(i0), sc = dates.map((d, i) => [d, h.score[i0 + i]]), px = dates.map((d, i) => [d, h.price[i0 + i]]);
+  const first = dates[0], day = 864e5;
+  const areas = g.episodes.buy.filter(e => e.end >= first).map(e => { const s = e.start < first ? first : e.start; const minEnd = new Date(new Date(s).getTime() + (range === "1Y" ? 2 : range === "5Y" ? 8 : 20) * day).toISOString().slice(0, 10); return [{ xAxis: s }, { xAxis: e.end > minEnd ? e.end : minEnd }]; });
+  const zoneOf = v => D.zones.find(z => v >= z.lo && (v < z.hi || z.hi === 100)) || D.zones[2];
+  const name = g.benchmark.split(" (")[0], log = range === "Max";
+  mk(el).setOption({
+    animation: false, axisPointer: { link: [{ xAxisIndex: "all" }] },
+    tooltip: { trigger: "axis", ...tipCommon(c), axisPointer: { type: "line", lineStyle: { color: c.muted, width: 1 } },
+      formatter: ps => { const s = ps.find(p => p.seriesIndex === 0), p = ps.find(p => p.seriesIndex === 1); const v = s && s.value[1]; return `<div style="color:${c.muted};margin-bottom:2px">${fdate((s || p).value[0])}</div>` + (v != null ? `Score <b>${v.toFixed(0)}</b> · ${zoneOf(v).label}<br>` : "") + (p && p.value[1] != null ? `${name} <b>${p.value[1].toLocaleString()}</b>` : ""); } },
+    title: [{ text: "Score", left: 8, top: 6, textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }, { text: name + (log ? " (log scale)" : ""), left: 8, top: "50%", textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }],
+    grid: [{ left: 48, right: 18, top: 30, height: "36%" }, { left: 48, right: 18, top: "57%", bottom: 30 }],
+    xAxis: [{ type: "time", gridIndex: 0, ...axisCommon(c), axisLabel: { show: false }, splitLine: { show: false } }, { type: "time", gridIndex: 1, ...axisCommon(c), splitLine: { show: false } }],
+    yAxis: [{ gridIndex: 0, min: 0, max: 100, interval: 25, ...axisCommon(c) }, { gridIndex: 1, type: log ? "log" : "value", scale: true, ...axisCommon(c), axisLabel: { color: c.muted, fontSize: 11, formatter: v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + "k" : v } }],
     series: [
-      { name: priceName, type: "line", xAxisIndex: 0, yAxisIndex: 0, data: h.prices[key], showSymbol: false, emphasis: { disabled: true },
-        lineStyle: { width: 1.5, color: css("--ink-2") }, itemStyle: { color: css("--ink-2") },
-        markArea: { silent: true, itemStyle: { color: css("--b1"), opacity: 0.10 }, data: shade } },
-      ...lines.map(([name, data, c], i) => ({
-        name, type: "line", xAxisIndex: 1, yAxisIndex: 1, data, showSymbol: false, emphasis: { disabled: true }, connectNulls: false,
-        lineStyle: { width: 2, color: css(c), cap: "round", join: "round" }, itemStyle: { color: css(c) },
-        ...(i === 0 ? { markArea: { silent: true, data: [
-          [{ yAxis: 0, itemStyle: { color: css("--b1"), opacity: 0.06 } }, { yAxis: 20 }],
-          [{ yAxis: 80, itemStyle: { color: css("--b5"), opacity: 0.06 } }, { yAxis: 100 }]] } } : {}),
-      })),
-    ],
-  }, true);
-}
-
-/* ------------------------------------------------------------------ tables */
-function sortable(table) {
-  table.querySelectorAll("th[data-sort]").forEach((th) => th.addEventListener("click", () => {
-    const col = th.cellIndex, dir = th.getAttribute("aria-sort") === "descending" ? 1 : -1;
-    table.querySelectorAll("th[data-sort]").forEach((x) => x.removeAttribute("aria-sort"));
-    th.setAttribute("aria-sort", dir === 1 ? "ascending" : "descending");
-    const body = table.tBodies[0];
-    const key = (tr) => { const td = tr.cells[col]; return td.dataset.v !== undefined ? Number(td.dataset.v) : td.textContent.trim().toLowerCase(); };
-    [...body.rows].sort((a, b) => {
-      const x = key(a), y = key(b);
-      if (typeof x === "number" && typeof y === "number") return (x - y) * dir;
-      if (typeof x === "number") return -1;
-      if (typeof y === "number") return 1;
-      return x < y ? -dir : x > y ? dir : 0;
-    }).forEach((tr) => body.appendChild(tr));
-  }));
-}
-function moreToggle(btnId, tableId) {
-  const btn = document.getElementById(btnId), t = document.getElementById(tableId);
-  btn.addEventListener("click", () => { t.classList.toggle("all"); btn.textContent = t.classList.contains("all") ? "Fewer columns" : "More columns"; });
-}
-
-function zbar(z, expensiveHigh) {
-  if (!isNum(z)) return "";
-  const c = Math.max(-3, Math.min(3, z)), w = Math.abs(c) / 3 * 50;
-  const rich = expensiveHigh ? z > 0 : z < 0;
-  return `<span class="zbar" aria-hidden="true"><b style="${c >= 0 ? "left:50%" : `left:${50 - w}%`};width:${w}%;border-radius:${c >= 0 ? "0 3px 3px 0" : "3px 0 0 3px"};background:${rich ? "var(--b1)" : "var(--b5)"}"></b></span>`;
-}
-
-function renderValuation(d) {
-  const win = (r, k) => r.windows[k] || {};
-  const z20 = (r) => win(r, "20y").z ?? win(r, "all").z;
-  const p20 = (r) => win(r, "20y").pct ?? win(r, "all").pct;
-  const rows = (d.valuation || []).map((r) => {
-    const hi = r.expensive_when === "high";
-    const unit = r.unit === "x" ? "x" : r.unit === "%" ? "%" : "";
-    const fs = r.factset_10y_avg != null ? ` · FactSet's own 5y ${fmt(r.factset_5y_avg)}, 10y ${fmt(r.factset_10y_avg)}` : "";
-    return `<tr><td class="name">${esc(r.label)}<small>${hi ? "Higher" : "Lower"} = more expensive · since ${r.since.slice(0, 4)}${fs}</small></td>
-      <td class="r num"${dv(r.value)} title="${esc(r.source)} · as of ${r.as_of}">${fmt(r.value)}${unit}</td>
-      <td class="r num opt"${dv(win(r, "5y").mean)}>${fmt(win(r, "5y").mean)}</td>
-      <td class="r num"${dv(win(r, "10y").mean)}>${fmt(win(r, "10y").mean)}</td>
-      <td class="r num"${dv(win(r, "20y").mean)}>${fmt(win(r, "20y").mean)}</td>
-      <td class="r num opt"${dv(win(r, "all").mean)}>${fmt(win(r, "all").mean)}</td>
-      <td class="r num"${dv(win(r, "10y").z)} title="Standard deviations from the 10-year average">${signed(win(r, "10y").z)} ${zbar(win(r, "10y").z, hi)}</td>
-      <td class="r num opt"${dv(z20(r))}>${signed(z20(r))}${win(r, "20y").z == null && win(r, "all").z != null ? "*" : ""}</td>
-      <td class="r num"${dv(p20(r))} title="Percentile within the last 20 years (or full history)">${fmt1(p20(r))}</td>
-      <td class="num"${dv(Date.parse(r.as_of))}>${shortDate(r.as_of)}</td>
-      <td><a href="${esc(r.source_url)}" target="_blank" rel="noopener" title="${esc(r.source)}">source</a></td></tr>`;
-  }).join("");
-  document.getElementById("valuation").innerHTML = `
-    <div class="bhead"><h2>S&amp;P 500 valuation vs history</h2><span class="sub">display only · bars: red = expensive vs the 10-year average, blue = cheap</span></div>
-    <div class="tablewrap"><table class="data" id="valtable"><thead><tr><th data-sort>Measure</th><th class="r" data-sort>Now</th><th class="r opt" data-sort>5y avg</th><th class="r" data-sort>10y avg</th><th class="r" data-sort>20y avg</th><th class="r opt" data-sort>Full history</th><th class="r" data-sort>z (10y)</th><th class="r opt" data-sort>z (20y)</th><th class="r" data-sort>Pctile (20y)</th><th data-sort>As of</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="tblbar"><button class="linkbtn" id="valmore">More columns</button></div>
-    <p class="note">The Phase 3 backtest keeps CAPE and equities/GDP out of the G2 score (their sign against later returns was wrong), so this panel shows stretch without weighting it. * = full-history z where 20 years are not available.</p>`;
-  sortable(document.getElementById("valtable"));
-  moreToggle("valmore", "valtable");
-}
-
-function renderAICos(d) {
-  const cell = (v, opt = false) => `<td class="r num${opt ? " opt" : ""}"${dv(v)}>${pctS(v)}</td>`;
-  const rows = (d.ai_companies || []).map((c) => `<tr><td><b>${esc(c.ticker)}</b></td><td class="ink2">${esc(human(c.layer))}</td>
-    ${cell(c.ret_1w, true)}${cell(c.ret_1m)}${cell(c.ret_3m, true)}${cell(c.ret_ytd)}${cell(c.drawdown)}
-    <td class="num opt"${c.release_date ? dv(Date.parse(c.release_date)) : ""}>${c.release_date ? shortDate(c.release_date) : "—"}</td>
-    <td class="r num opt"${dv(c.quote_positivity)} title="Executives' quoted remarks: net positive finance words per 100 words (Loughran-McDonald)">${fmt1(c.quote_positivity)}</td>
-    <td class="r num opt"${dv(c.ai_mentions)} title="AI mentions per 1,000 words of the release">${fmt1(c.ai_mentions)}</td>
-    <td class="r num opt"${dv(c.rev_guide)} title="Next-quarter revenue guidance midpoint">${c.rev_guide == null ? "—" : "$" + fmt(c.rev_guide) + "M"}</td>
-    ${cell(c.guide_growth, true)}${cell(c.eps_surprise)}${cell(c.revenue_ttm_yoy)}
-    <td class="num"${c.next_report ? dv(Date.parse(c.next_report)) : ""}>${c.next_report ? shortDate(c.next_report) : "—"}</td></tr>`).join("");
-  document.getElementById("aicos").innerHTML = `
-    <div class="bhead"><h2>AI companies</h2><span class="sub">performance, earnings and guidance · returns in local currency · as of ${dateLbl(d.as_of)} · click a column to sort</span></div>
-    <div class="tablewrap"><table class="data" id="aitable"><thead><tr><th data-sort>Ticker</th><th data-sort>Layer</th><th class="r opt" data-sort>1W</th><th class="r" data-sort>1M</th><th class="r opt" data-sort>3M</th><th class="r" data-sort>YTD</th><th class="r" data-sort>From 52w high</th><th class="opt" data-sort>Last release</th><th class="r opt" data-sort>Leader tone</th><th class="r opt" data-sort>AI mentions</th><th class="r opt" data-sort>Revenue guide</th><th class="r opt" data-sort>Guide vs prior</th><th class="r" data-sort>EPS surprise</th><th class="r" data-sort>Revenue TTM YoY</th><th data-sort>Next report</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="tblbar"><button class="linkbtn" id="aimore">More columns</button></div>
-    <p class="note">Earnings releases: SEC 8-K exhibit 99.1. Leader tone is a word count (Loughran-McDonald lists), not model output. Guidance appears only where a company states a numeric revenue outlook. EPS surprises: Finnhub (last 4 quarters). Revenue: SEC XBRL.</p>`;
-  sortable(document.getElementById("aitable"));
-  moreToggle("aimore", "aitable");
-}
-
-function renderWatchlist(d) {
-  const rows = d.watchlist.map((w) => `<tr><td>${esc(w.entity)}<small class="muted" style="display:block;font-size:11.5px">${esc(w.kpi)}</small></td>
-    <td>${esc(human(w.metric || "—"))}${w.basis ? ` <span class="muted">(${esc(w.basis)})</span>` : ""}</td>
-    <td class="r num"${dv(w.value)} title="${esc(w.note || "")}">${esc(typeof w.value === "number" ? fmt(w.value) : w.value)}</td><td>${esc(w.period)}</td>
-    <td class="num">${shortDate(w.as_of)}</td><td><span class="ink2">${esc(w.status)}</span></td><td><a href="${esc(w.source_url)}" target="_blank" rel="noopener">source</a></td></tr>`).join("");
-  document.getElementById("watchlist").innerHTML = `
-    <div class="bhead"><h2>Watch list</h2><span class="sub">manual KPIs from config/events.yaml</span></div>
-    <div class="tablewrap"><table class="data" id="wltable"><thead><tr><th data-sort>Entity</th><th data-sort>Metric</th><th class="r" data-sort>Value</th><th data-sort>Period</th><th data-sort>As of</th><th data-sort>Status</th><th>Source</th></tr></thead><tbody>${rows || `<tr><td colspan="7" class="muted">No entries yet.</td></tr>`}</tbody></table></div>
-    <p class="note">Each entry needs a source URL and a status, which sets its weight: primary 1.0 · guidance 0.8 · secondhand 0.6 · estimate 0.3.${d.events_rejected.length ? ` <b>${d.events_rejected.length} entries rejected by schema.</b>` : ""}</p>
-    <p class="note">Watching: Anthropic Q4 dollar add and S-1, OpenAI run rate (net basis), capex framing after the late-October prints, rate limits vs growth, Ramp and Menlo shares, open-weight token share, customer insourcing, HBM/DRAM contract prices.</p>`;
-  sortable(document.getElementById("wltable"));
-}
-
-const KINDS = { fomc: "FOMC", macro: "Macro", earnings: "Earnings" };
-function renderLists(d) {
-  const cats = d.catalysts, cap = 10;
-  const row = (c) => `<div class="lrow"><span class="when">${dayDate(c.date)}</span>
-      <span><a href="${esc(c.source_url)}" target="_blank" rel="noopener" style="color:var(--ink)">${esc(c.label)}</a> <span class="k">· ${esc(c.detail || KINDS[c.kind] || human(c.kind))}</span></span></div>`;
-  const el = document.getElementById("catalysts");
-  const draw = (all) => {
-    el.innerHTML = (cats.length ? (all ? cats : cats.slice(0, cap)).map(row).join("") : `<p class="muted">Nothing in the next 30 days.</p>`)
-      + (cats.length > cap ? `<div class="tblbar"><button class="linkbtn" id="catmore">${all ? "Show fewer" : `Show all ${cats.length}`}</button></div>` : "");
-    const b = document.getElementById("catmore");
-    if (b) b.addEventListener("click", () => draw(!all));
-  };
-  draw(false);
-  document.getElementById("movers").innerHTML = d.movers.map((m) => `<div class="lrow" style="grid-template-columns:minmax(0,1fr) 64px 48px">
-      <span>${esc(m.name)} <span class="muted">· ${m.gauge}</span></span><span class="num" style="text-align:right" title="Score change over 5 trading days">${signed(m.change_1w)}</span>
-      <span class="num muted" style="text-align:right" title="Score now">${fmt1(m.score)}</span></div>`).join("") || `<p class="muted">No moves.</p>`;
-}
-
-/* ------------------------------------------------------------- methodology */
-function renderMethod(d) {
-  const m = d.methodology;
-  const gaugeRows = Object.entries(m.gauges).map(([id, g]) => `<tr><td>${id}</td><td>${esc(g.name)}</td><td class="name">${Object.entries(g.pillars).map(([p, w]) => `${esc(pname(p))} ${w}`).join(" · ")}</td><td class="name">${g.scale.map(esc).join(" → ")}</td></tr>`).join("");
-  document.getElementById("tab-method").innerHTML = `
-    <h2>How the gauges work</h2>
-    <ul>${Object.values(m.rules).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
-    <p class="note">Bands: 0–20, 20–40, 40–60, 60–80, 80–100. Full backtest: <a href="../reports/validation.md">reports/validation.md</a>. Sentiment composites are mostly coincident and contrarian at extremes; downside risk is carried by the fragility overlay and the G1/G2 divergence banners.</p>
-    <h2>Gauges and pillar weights</h2>
-    <div class="tablewrap"><table class="data"><thead><tr><th>Gauge</th><th>Name</th><th>Pillars (weight)</th><th>Scale</th></tr></thead><tbody>${gaugeRows}</tbody></table></div>
-    <h2>Indicators <select id="mfilter" aria-label="Filter by gauge"><option value="">All gauges</option>${Object.keys(m.gauges).map((g) => `<option>${g}</option>`).join("")}</select></h2>
-    <div class="tablewrap"><table class="data"><thead><tr><th>Indicator</th><th>Gauge</th><th>Pillar</th><th>Role</th><th>Direction</th><th class="r">Weight</th><th>Freq</th><th>Window</th><th>Inputs / method</th><th>Notes</th></tr></thead><tbody id="mbody"></tbody></table></div>`;
-  const fill = () => {
-    const f = document.getElementById("mfilter").value;
-    document.getElementById("mbody").innerHTML = m.indicators.filter((i) => !f || i.gauge === f).map((i) => `<tr class="${i.role === "display" || i.weight === 0 ? "inactive" : ""}">
-      <td class="name">${esc(i.name)}<small>${i.id} · ${i.kind}${i.cnn ? " · CNN row" : ""}${i.fragility ? " · fragility: " + i.fragility.replaceAll("_", " ") : ""}</small></td>
-      <td>${i.gauge}</td><td>${esc(pname(i.pillar))}</td><td>${i.role}</td><td>${i.direction.replaceAll("_", " ")}</td><td class="r num">${i.weight}</td><td>${i.expected_freq}</td><td>${i.lookback}</td>
-      <td class="name">${esc(i.inputs.join(" + ") || i.transform)}${i.inputs.length && i.transform !== "identity" ? " → " + esc(i.transform) : ""}</td>
-      <td class="name muted" style="min-width:260px">${esc(i.notes || "")}${i.validation ? `<br><b>${esc(i.validation)}</b>` : ""}</td></tr>`).join("");
-  };
-  document.getElementById("mfilter").addEventListener("change", fill);
-  fill();
-}
-
-function renderFooter(d) {
-  document.getElementById("footer").innerHTML = d.attribution.map((a) => `<p>${esc(a)}</p>`).join("") +
-    `<p>Built ${esc(new Date(d.generated_at).toISOString().replace("T", " ").slice(0, 16))} UTC from data/latest.json. Not investment advice.</p>`;
-}
-
-/* -------------------------------------------------------------------- boot */
-function renderAll() {
-  const d = LATEST;
-  renderMeta(d); renderAlerts(d); renderOverview(d); renderDetail(); renderSignals(d);
-  renderHistMode(); renderValuation(d); renderAICos(d); renderLists(d); renderWatchlist(d);
-  renderMethod(d); renderFooter(d);
-  renderHistory();
-}
-
-function setupTabs() {
-  document.querySelectorAll(".tabs [data-tab]").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".tabs [data-tab]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-    document.getElementById("tab-dash").hidden = b.dataset.tab !== "dash";
-    document.getElementById("tab-method").hidden = b.dataset.tab !== "method";
-    if (b.dataset.tab === "dash" && HCHART) HCHART.resize();
-  }));
-  document.addEventListener("click", (e) => {
-    const pop = document.getElementById("issues");
-    if (pop && pop.open && !pop.contains(e.target)) pop.open = false;
+      { name: "Score", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: sc, showSymbol: false, connectNulls: false, lineStyle: { width: 1.5, color: c.ink }, itemStyle: { color: c.ink },
+        markArea: { silent: true, data: [[{ yAxis: 0, itemStyle: { color: c.z1, opacity: .22 } }, { yAxis: 10 }], [{ yAxis: 90, itemStyle: { color: c.z5, opacity: .22 } }, { yAxis: 100 }]] } },
+      { name, type: "line", xAxisIndex: 1, yAxisIndex: 1, data: px, showSymbol: false, lineStyle: { width: 1.5, color: c.ink }, itemStyle: { color: c.ink },
+        markArea: { silent: true, itemStyle: { color: c.z1, opacity: .3 }, data: areas } }],
   });
 }
 
-(async function main() {
-  setupTabs();
-  const hash = location.hash.slice(1);
-  if (GAUGE_IDS.includes(hash)) state.gauge = hash;
-  if (hash === "method") document.querySelector('.tabs [data-tab="method"]').click();
-  try {
-    [LATEST, HISTORY] = await Promise.all([load("latest.json"), load("history.json")]);
-  } catch (e) {
-    document.getElementById("tab-dash").innerHTML = `<div class="err">${esc(e.message)}. Run <code>make refresh</code> to build data/latest.json.</div>`;
-    document.getElementById("meta").textContent = "";
+function indChart(g) {
+  const el = $("#indchart"); if (!el || !H || !openInd) return;
+  const c = base();
+  if (view === "lt") {
+    const h = H.longterm[openInd]; if (!h) return;
+    mk(el).setOption({ animation: false, grid: { left: 44, right: 16, top: 16, bottom: 28 },
+      tooltip: { trigger: "axis", ...tipCommon(c), formatter: ps => `<div style="color:${c.muted}">${fdate(ps[0].value[0], { month: "short", year: "numeric" })}</div>` + ps.filter(p => p.value[1] != null).map(p => `${p.marker} ${p.seriesName} <b>${sgn(p.value[1])}</b> a year`).join("<br>") },
+      xAxis: { type: "time", ...axisCommon(c), splitLine: { show: false } }, yAxis: { type: "value", ...axisCommon(c), axisLabel: { color: c.muted, fontSize: 11, formatter: "{value}%" } },
+      series: [{ name: "Estimate", type: "line", showSymbol: false, data: h.dates.map((d, i) => [d, h.pred[i]]), lineStyle: { width: 2, color: c.s1 }, itemStyle: { color: c.s1 } }, { name: "Delivered", type: "line", showSymbol: false, data: h.dates.map((d, i) => [d, h.realized[i]]), lineStyle: { width: 2, color: c.s2 }, itemStyle: { color: c.s2 } }] });
     return;
   }
-  renderAll();
-  let t;
-  window.addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => HCHART && HCHART.resize(), 120); });
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderHistory);
-})();
+  const h = H[g.id], i = g.indicators.find(x => x.id === openInd), vals = h.ind[openInd]; if (!vals || !i) return;
+  const cut = cutoff(), i0 = cut ? Math.max(0, h.dates.findIndex(d => d >= cut)) : 0;
+  const data = h.dates.slice(i0).map((d, k) => [d, vals[i0 + k]]);
+  mk(el).setOption({ animation: false, grid: { left: 46, right: 14, top: 26, bottom: 26 },
+    title: { text: `${i.name} · ${range === "Max" ? "all history" : "last " + range.toLowerCase().replace("y", " years").replace("1 years", "year")}`, left: 4, top: 2, textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } },
+    tooltip: { trigger: "axis", ...tipCommon(c), formatter: ps => ps[0].value[1] == null ? "" : `<div style="color:${c.muted}">${fdate(ps[0].value[0])}</div><b>${fval(i, ps[0].value[1])}</b>` },
+    xAxis: { type: "time", ...axisCommon(c), splitLine: { show: false } }, yAxis: { type: "value", scale: true, ...axisCommon(c) },
+    series: [{ type: "line", showSymbol: false, data, lineStyle: { width: 1.5, color: c.ink }, itemStyle: { color: c.ink } }] });
+}
+
+function gpuChart() {
+  const el = $("#gpuchart"), g = D.ai_context && D.ai_context.gpu_spot; if (!el || !g || !el.offsetParent) return;
+  const c = base();
+  mk(el).setOption({ animation: false, grid: { left: 40, right: 14, top: 14, bottom: 26 },
+    tooltip: { trigger: "axis", ...tipCommon(c), formatter: ps => `<div style="color:${c.muted}">${fdate(ps[0].value[0])}</div>Index <b>${ps[0].value[1].toFixed(1)}</b>` },
+    xAxis: { type: "time", ...axisCommon(c), splitLine: { show: false } }, yAxis: { type: "value", scale: true, ...axisCommon(c) },
+    series: [{ type: "line", showSymbol: false, data: g.dates.map((d, i) => [d, g.index[i]]), lineStyle: { width: 2, color: c.ink }, itemStyle: { color: c.ink } }] });
+}
+
+/* ---------------------------------------------------------------- wiring */
+async function renderDetail() {
+  dispose();
+  const el = $("#detail");
+  if (!view) { el.hidden = true; el.innerHTML = ""; return; }
+  const g = D.gauges[view];
+  if (view === "lt" && !D.longterm) { view = null; el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = view === "lt" ? ltDetail(D.longterm) : gaugeDetail(g);
+  el.querySelectorAll("tr.ind").forEach(r => { const go = () => { openInd = openInd === r.dataset.ind ? null : r.dataset.ind; renderDetail(); }; r.onclick = go; r.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }; });
+  el.querySelectorAll("#rangeseg button").forEach(b => b.onclick = () => { range = b.dataset.range; renderDetail(); });
+  el.querySelectorAll("#epseg button").forEach(b => b.onclick = () => { epSide = b.dataset.ep; renderDetail(); });
+  el.querySelectorAll("th.sortable").forEach(t => t.onclick = () => { const k = t.dataset.sort; if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "ticker" || k === "layer" || k === "next_report" ? 1 : -1; } folds.add("co"); renderDetail(); });
+  el.querySelectorAll("details.fold").forEach(d => { if (folds.has(d.dataset.fold)) d.open = true; d.ontoggle = () => { d.open ? folds.add(d.dataset.fold) : folds.delete(d.dataset.fold); if (d.dataset.fold === "gpu" && d.open) gpuChart(); if (d.open) charts.forEach(c => c.resize()); }; });
+  if (!H) { try { H = await (await fetch("../data/signals_history.json?t=" + encodeURIComponent(D.generated_at))).json(); } catch (e) { H = null; } }
+  if (view !== "lt") histChart(g);
+  indChart(g);
+  gpuChart();
+  if (jump && innerWidth <= 860) el.scrollIntoView({ behavior: "smooth", block: "start" });   // stacked tiles push the detail off screen
+  jump = false;
+}
+
+function renderMeta() {
+  $("#asof").innerHTML = `Close of <b>${fdate(D.as_of)}</b>`;
+  const bad = D.sources.filter(s => !s.ok);
+  $("#srcdot").className = "sdot " + (bad.length ? "warning" : "good");
+  $("#srclbl").textContent = bad.length ? `${bad.length} source issue${bad.length > 1 ? "s" : ""}` : "All sources current";
+  const nxt = new Date(D.next_refresh_utc);
+  $("#srcpanel").innerHTML = `<ul>${D.sources.map(s => `<li><span class="sdot ${s.ok ? "good" : "warning"}"></span><span class="nm">${esc(s.name)}${s.note ? `<small>${esc(s.note)}</small>` : ""}</span><span class="muted">${s.latest ? fdate(s.latest, { month: "short", day: "numeric" }) : ""}</span></li>`).join("")}</ul><p class="muted" style="margin:10px 0 0">Rebuilt ${new Date(D.generated_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}. Next scheduled run around ${nxt.toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}, after each US session.</p>`;
+  $("#foot").innerHTML = `<p><b>How to read this.</b> Scores rank today's fear against history using only what was known on each day. The tables report what followed similar readings; they are frequencies from the past, not forecasts, and the buy side is far better supported than the sell side. Inputs and zone edges were chosen on this same history, which flatters every number here to some degree. Not investment advice.</p><p>Data: Yahoo Finance, Cboe, FRED (Federal Reserve Z.1), shillerdata.com, SSGA, Finnhub, Nebius. Updated automatically after each US trading day.</p>`;
+}
+
+function route() {
+  const h = location.hash.replace("#", "");
+  const next = ["spx", "ai", "lt"].includes(h) ? h : null;
+  if (next !== view) { openInd = null; }
+  view = next;
+  if (!D) return;
+  renderTiles(); renderDetail();
+}
+
+$("#theme").onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const nxt = cur === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = nxt;
+  try { localStorage.setItem("mg-theme", nxt); } catch (e) { /* storage blocked */ }
+  if (D) renderDetail();
+};
+document.addEventListener("click", e => { const p = $("#srcpop"); if (p.open && !p.contains(e.target)) p.open = false; });
+addEventListener("hashchange", route);
+addEventListener("resize", () => charts.forEach(c => c.resize()));
+fetch("../data/signals.json?t=" + Date.now()).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { D = d; renderMeta(); route(); })
+  .catch(e => { $("#tiles").innerHTML = `<div class="empty">Could not load data/signals.json (${esc(e.message)}).</div>`; });
 </script>
 </body>
 </html>
