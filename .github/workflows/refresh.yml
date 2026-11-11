@@ -9,6 +9,11 @@ on:
     - cron: "0 2 * * 2-6"     # 02:00 UTC Tue-Sat = evening ET after the Mon-Fri close
     - cron: "0 10 * * 2-6"    # retry: only rebuilds if the first run failed or an input posted late
   workflow_dispatch:
+    inputs:
+      test_alert:
+        description: Also send a test alert email
+        type: boolean
+        default: false
 
 concurrency:
   group: refresh
@@ -16,6 +21,7 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write       # threshold alerts are GitHub issues assigned to the owner, which GitHub emails
 
 jobs:
   refresh:
@@ -39,6 +45,12 @@ jobs:
           else
             python -m signals.build
           fi
+      - name: Send alerts
+        continue-on-error: true     # a failed notification must not block the data; it is retried next run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALERT_ASSIGNEE: ${{ github.repository_owner }}
+        run: python -m signals.alerts --send ${{ inputs.test_alert && '--test' || '' }}
       - name: Commit data
         run: |
           git config user.name "github-actions[bot]"

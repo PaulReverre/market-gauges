@@ -16,6 +16,22 @@ row in the detail for that input's own chart and track record.
 0 is extreme fear (historically the time to buy), 100 is complacency. A score of
 10 or lower is the **buy zone**; 90 or higher is the **caution zone**.
 
+## Alerts and refreshing
+
+- **Email alerts.** When a gauge's score first closes at or below its lower
+  threshold, or at or above its upper one, the nightly job opens a GitHub issue
+  assigned to the repository owner, and GitHub emails it. The issue closes
+  itself (a second email) when the score leaves the range. Thresholds live in
+  [`config/alerts.yaml`](config/alerts.yaml), default 10 and 90 for both gauges;
+  the dashboard's status menu links straight to the editor. The dashboard also
+  shows a banner while an alert is active and marks the thresholds on each dial.
+- **Daily refresh.** GitHub Actions rebuilds the data after every US session
+  (scheduled 02:00 UTC Tuesday to Saturday; GitHub often starts it some hours
+  late) and retries later the same day if anything was missing.
+- **Refresh button.** Re-reads the latest published data without reloading the
+  page; an open tab also checks by itself every 10 minutes. It cannot make newer
+  data exist: for that, the status menu links to "Run a rebuild now on GitHub".
+
 ## What "predictive" means here
 
 No market metric determines future returns. What this project does instead:
@@ -74,6 +90,16 @@ below 30 (good 1-month confirmation, but they weakened the score at 3–12 month
 VVIX, SKEW, VXN minus realized volatility, NVDA realized volatility, AI basket
 breadth, Nebius GPU spot prices (too little history to test).
 
+**Checked on request (2026-11-10)**, none of which improved the score:
+
+| Metric | Verdict |
+|---|---|
+| AAII sentiment (bulls minus bears, 4-week) | Shown as context. Modest edge on its own, same sign in both halves, but adding it cut the buy zone's 3-month edge from 3.0 to 1.8 points |
+| BofA fund-manager cash | No free data exists. The stand-in, AAII's monthly cash allocation, is shown as context and has no edge at 1 to 3 months |
+| NAAIM exposure | Not added. NAAIM's public feed now runs about three months behind, and with 2008 in the sample its low readings were not followed by better returns |
+| High-yield credit spreads | Shown as context (FRED serves only three years). Its long-history cousin, the Baa spread, fails as a signal but works as a **credit check**: buy-zone days with credit blowing out returned about half as much over 12 months as the rest |
+| Equity fund flows | Shown as context from the Fed's quarterly accounts. Heavy outflows preceded better returns, but the data arrives 10 weeks late; weekly ICI data is closed to scripts |
+
 **Rejected as signals**: drawdown from the 52-week high and distance from the
 200-day average (buying them lost money in 2000–02 and 2008), credit spreads,
 semis' relative strength.
@@ -103,9 +129,10 @@ The AI company table and the catalyst calendar are kept, behind the AI gauge.
 .github/workflows/refresh.yml   02:00 UTC Tue–Sat (+ 10:00 UTC retry)
   └─ python -m signals.build
        fetch    Yahoo (indices, 503 members, AI basket) · Cboe (COR1M, VVIX, SKEW, put/call)
-                FRED (Z.1, Baa, 10y) · shillerdata.com · SSGA · Nebius · Finnhub
+                FRED (Z.1, Baa, HY, 10y) · shillerdata.com · AAII · SSGA · Nebius · Finnhub
        score    src/signals/gauges.py, model.py, longterm.py
        write    data/signals.json, data/signals_history.json, data/state/*
+  └─ python -m signals.alerts --send   (GitHub issue when a threshold is crossed)
   └─ commit → Vercel redeploys dashboard/index.html
 ```
 
@@ -136,9 +163,9 @@ commit a locally built `data/signals.json` unless you mean to publish it.
 
 ```
 src/signals/    fetch.py · gauges.py (indicator definitions) · model.py (scoring, odds, evidence)
-                longterm.py · companies.py · build.py
+                longterm.py · companies.py · alerts.py · build.py
 dashboard/      index.html (static; ECharts from cdnjs)
-config/         calendar.yaml (macro dates for the catalyst list)
+config/         alerts.yaml (thresholds) · calendar.yaml (macro dates for the catalyst list)
 data/           signals.json · signals_history.json · state/
 tests/          test_signals.py
 ```

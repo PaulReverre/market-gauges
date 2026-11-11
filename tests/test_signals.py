@@ -136,3 +136,50 @@ def test_gpu_spot_index_ignores_series_that_start_late():
     df = pd.DataFrame({"a": [1.0, 1.1, 1.21, 1.21, 1.21], "b": [np.nan, np.nan, 5.0, 5.0, 5.0]}, index=idx)
     g = C.gpu_spot(df)
     assert g["index"][0] == 100 and g["index"][2] == 121 and g["value"] == 121   # b's arrival does not move the level
+
+
+# ------------------------------------------------------------------ alerts
+from signals import alerts as A
+
+
+def _g(gid, score, spark=None):
+    stats = {"hit": 79, "median": 5.0}
+    return {"id": gid, "name": "S&P 500" if gid == "spx" else "AI & semiconductors", "score": score, "as_of": "2026-11-09",
+            "zone": {"label": "Extreme fear"}, "spark": spark or [score],
+            "now": {"zone": {"episodes": 51, "h": {"3m": stats}}, "base": {"3m": {"hit": 70, "median": 3.4}}}}
+
+
+CFG = {"spx": {"below": 10.0, "above": 90.0}, "ai": {"below": 15.0, "above": 85.0}, "dashboard_url": "https://x/"}
+
+
+def test_alert_state_uses_each_gauges_thresholds():
+    assert A.state_of(10, CFG["spx"]) == "below" and A.state_of(10.1, CFG["spx"]) == "none"
+    assert A.state_of(90, CFG["spx"]) == "above" and A.state_of(12, CFG["ai"]) == "below"
+
+
+def test_evaluate_lists_only_gauges_in_range_and_counts_days():
+    out = A.evaluate({"spx": _g("spx", 8, [40, 12, 9, 8]), "ai": _g("ai", 50)}, CFG)
+    assert out["thresholds"]["ai"] == {"below": 15.0, "above": 85.0}
+    assert [(a["gauge"], a["kind"], a["days"], a["threshold"]) for a in out["active"]] == [("spx", "below", 2, 10.0)]
+
+
+def test_transitions_fire_once_per_change():
+    gauges = {"spx": _g("spx", 8), "ai": _g("ai", 50)}
+    assert A.transitions({}, gauges, CFG) == [{"gauge": "spx", "was": "none", "now": "below"}]
+    assert A.transitions({"spx": "below", "ai": "none"}, gauges, CFG) == []                       # already told
+    assert A.transitions({"spx": "below", "ai": "above"}, gauges, CFG) == [{"gauge": "ai", "was": "above", "now": "none"}]
+
+
+def test_issue_text_states_score_threshold_and_odds():
+    title, body = A.issue_text(_g("spx", 8), "below", 10.0, "https://x/")
+    assert title == "Buy alert: S&P 500 gauge at 8 (at or below 10)"
+    assert "79% of the time" in body and "https://x/#spx" in body and "not a forecast" in body
+
+
+def test_alert_config_rejects_inverted_thresholds(tmp_path):
+    p = tmp_path / "alerts.yaml"
+    p.write_text("spx: {below: 95, above: 90}\n")
+    with pytest.raises(ValueError):
+        A.load_config(p)
+    p.write_text("ai: {below: 20}\n")
+    assert A.load_config(p)["ai"] == {"below": 20.0, "above": 90.0} and A.load_config(p)["spx"] == {"below": 10.0, "above": 90.0}

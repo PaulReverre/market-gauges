@@ -183,6 +183,20 @@ def grade(side: dict, want: str) -> str:
     return "weak"
 
 
+def split_odds(score: pd.Series, px: pd.Series, flag: pd.Series, cut: float = 10) -> list[dict]:
+    """Buy-zone days split by a yes/no condition (`flag`), with what the benchmark did next in each half."""
+    fw = forward_returns(px)
+    d = pd.concat([score.rename("s"), flag.rename("f"), fw], axis=1, sort=True).dropna(subset=["s", "f"])
+    out = []
+    for key, m in (("yes", (d.s <= cut) & d.f.astype(bool)), ("no", (d.s <= cut) & ~d.f.astype(bool))):
+        row = {"key": key, "days": int(m.sum()), "episodes": count_episodes(m.values), "h": {}}
+        for h, lab in HORIZONS.items():
+            y = d.loc[m, h].dropna()
+            row["h"][lab] = None if len(y) < 5 else {"mean": round(float(y.mean()), 1), "hit": round(float((y > 0).mean() * 100))}
+        out.append(row)
+    return out
+
+
 def episodes(score: pd.Series, px: pd.Series, cut: float, below: bool = True) -> list[dict]:
     """Every visit to a zone, with what the benchmark did from the first day in it."""
     s = score.dropna()

@@ -1,0 +1,9 @@
+# Alert thresholds. You get an email (through a GitHub issue assigned to you) on
+# the day a gauge's score first closes at or below `below`, or at or above
+# `above`, and another when it leaves that range. Scores run 0 (extreme fear)
+# to 100 (complacency). 10 and 90 are the edges of the buy and caution zones,
+# which is where the historical evidence is; widen them to hear about it sooner.
+spx: {below: 10, above: 90}
+ai: {below: 10, above: 90}
+
+dashboard_url: https://market-gauges.vercel.app/dashboard/

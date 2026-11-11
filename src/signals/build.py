@@ -10,11 +10,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
+import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
+from signals import alerts as A
 from signals import companies as C
 from signals import fetch as F
 from signals import gauges as G
@@ -31,6 +35,17 @@ def next_refresh(now: datetime) -> datetime:
     while t <= now or t.weekday() not in (1, 2, 3, 4, 5):
         t += timedelta(days=1)
     return t
+
+
+def _repo_slug() -> str | None:
+    """owner/name of the GitHub remote, for the dashboard's "rebuild" and "edit thresholds" links."""
+    try:
+        url = subprocess.run(["git", "config", "--get", "remote.origin.url"], capture_output=True, text=True,
+                             cwd=F.ROOT, timeout=10).stdout.strip()
+        m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", url)
+        return m.group(1) if m else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def is_current(session) -> bool:
@@ -96,6 +111,16 @@ def main() -> None:
         except Exception:  # noqa: BLE001 - already logged; the indicator shows as missing
             return pd.DataFrame()
 
+    def slow(name, fn, label, max_age_days):
+        """Like soft(), but skips the request while the saved copy is newer than the source's own cadence."""
+        path = F.STATE / f"{name}.csv"
+        if path.exists():
+            saved = pd.read_csv(path, index_col=0, parse_dates=True)
+            if not saved.empty and (pd.Timestamp(session) - saved.index.max()).days <= max_age_days:
+                log.add(label, True, saved.index.max().date())
+                return saved
+        return soft(name, fn, label)
+
     cboe = pd.concat([soft(f"cboe_{s.lower()}", lambda s=s: F.cboe_index(s), f"Cboe {s}") for s in ("COR1M", "VVIX", "SKEW")],
                      axis=1, sort=True)
     pc = F.putcall(session, log)
@@ -104,9 +129,17 @@ def main() -> None:
     z1 = soft("fred_z1", lambda: F.fred_many(L.Z1), "FRED Z.1 accounts")
     sh = soft("shiller", F.shiller, "Shiller CAPE")
     neb = F.nebius(log)
+    # AAII's site sits behind a bot filter that sometimes answers a script with a web page instead of
+    # the file. Ask only when the saved copy is due an update, and fall back to that copy when refused.
+    aaii = slow("aaii_sentiment", F.aaii_sentiment, "AAII sentiment", 6)
+    alloc = slow("aaii_allocation", F.aaii_allocation, "AAII allocation", 31)
+    hy = soft("fred_hy_oas", lambda: F.fred("BAMLH0A0HYM2"), "FRED high-yield spread")
+    flows = soft("fred_fund_flows", lambda: F.fred_many(["BOGZ1FA653064100Q", "BOGZ1FA563064100Q"]), "FRED fund flows")
 
     # ---- gauges
-    spx_inds, spx = G.spx_indicators(px, cboe, pc, members, baa["BAA10Y"] if "BAA10Y" in baa else None)
+    extra = {"aaii": aaii, "alloc": alloc, "hy": hy["BAMLH0A0HYM2"] if "BAMLH0A0HYM2" in hy else None,
+             "flows": G.fund_flow_pct(flows, z1) if not flows.empty and not z1.empty else None}
+    spx_inds, spx = G.spx_indicators(px, cboe, pc, members, baa["BAA10Y"] if "BAA10Y" in baa else None, extra)
     g_spx, h_spx = G.build_gauge("spx", "S&P 500", "S&P 500", spx_inds, spx, G.SPX_PILLARS)
     basket = px[[c for c in basket_syms if c in px]]
     ai_inds, sox = G.ai_indicators(px, basket)
@@ -138,6 +171,8 @@ def main() -> None:
         "horizons": list(M.HORIZONS.values()),
         "zones": [{"key": k, "label": lab, "lo": lo, "hi": min(hi, 100)} for k, lab, lo, hi in M.ZONES],
         "gauges": {"spx": g_spx, "ai": g_ai}, "longterm": longterm, "ai_context": ai_context,
+        "alerts": A.evaluate({"spx": g_spx, "ai": g_ai}, A.load_config()),
+        "repo": os.environ.get("GITHUB_REPOSITORY") or _repo_slug(),
         "sources": log.rows,
     }
     charts = longterm.pop("charts") if longterm else {}

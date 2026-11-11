@@ -4,187 +4,228 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Market Gauges</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 22a12 12 0 0 1 24 0' fill='none' stroke='%232a78d6' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M16 22l6-8' stroke='%230b0b0b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 22a12 12 0 0 1 24 0' fill='none' stroke='%232a78d6' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M16 22l6-8' stroke='%23898781' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
   try { const t = localStorage.getItem("mg-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) { /* storage blocked */ }
 </script>
 <style>
-/* Zones z1..z5 are a diverging scale: fear (red) <- neutral gray -> complacency (blue). */
+/* Zones z1..z5 are a diverging scale: fear (red) <- neutral gray -> complacency (blue). Text always wears ink tokens. */
 :root {
   color-scheme: light;
-  --page: #f9f9f7; --surface: #fcfcfb; --wash: #f1f0ec;
-  --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-  --grid: #e1e0d9; --base: #c3c2b7; --ring: rgba(11, 11, 11, .10);
+  --page: #f5f4f0; --surface: #ffffff; --surface-2: #faf9f6; --wash: #efeee9;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #86847e;
+  --grid: #e4e2db; --base: #c3c2b7; --ring: rgba(11, 11, 11, .09);
   --link: #256abf;
   --z1: #c9403e; --z2: #ee9a92; --z3: #bdbbb2; --z4: #86b6ef; --z5: #256abf;
   --s1: #2a78d6; --s2: #eb6834;
-  --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
+  --good: #0ca30c; --warning: #e39a00; --critical: #d03b3b;
+  --glow-a: rgba(42, 120, 214, .10); --glow-b: rgba(201, 64, 62, .07);
+  --shadow: 0 1px 2px rgba(20, 20, 30, .05), 0 8px 28px rgba(20, 20, 30, .07);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --page: #0d0d0d; --surface: #1a1a19; --wash: #242422;
-    --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
-    --grid: #2c2c2a; --base: #383835; --ring: rgba(255, 255, 255, .10);
-    --link: #6da7ec;
-    --z1: #ee6b67; --z2: #8f3f3c; --z3: #4a4945; --z4: #1c5cab; --z5: #6da7ec;
+    --page: #0a0c10; --surface: #12151b; --surface-2: #161a21; --wash: #1c2029;
+    --ink: #f2f1ee; --ink-2: #c5c4bd; --muted: #8b8a85;
+    --grid: #252a33; --base: #3a404d; --ring: rgba(255, 255, 255, .08);
+    --link: #7db2f0;
+    --z1: #ee6b67; --z2: #8f3f3c; --z3: #4a4d55; --z4: #1c5cab; --z5: #6da7ec;
     --s1: #3987e5; --s2: #d95926;
+    --glow-a: rgba(57, 135, 229, .16); --glow-b: rgba(238, 107, 103, .10);
+    --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 40px rgba(0, 0, 0, .35);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #0d0d0d; --surface: #1a1a19; --wash: #242422;
-  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
-  --grid: #2c2c2a; --base: #383835; --ring: rgba(255, 255, 255, .10);
-  --link: #6da7ec;
-  --z1: #ee6b67; --z2: #8f3f3c; --z3: #4a4945; --z4: #1c5cab; --z5: #6da7ec;
+  --page: #0a0c10; --surface: #12151b; --surface-2: #161a21; --wash: #1c2029;
+  --ink: #f2f1ee; --ink-2: #c5c4bd; --muted: #8b8a85;
+  --grid: #252a33; --base: #3a404d; --ring: rgba(255, 255, 255, .08);
+  --link: #7db2f0;
+  --z1: #ee6b67; --z2: #8f3f3c; --z3: #4a4d55; --z4: #1c5cab; --z5: #6da7ec;
   --s1: #3987e5; --s2: #d95926;
+  --glow-a: rgba(57, 135, 229, .16); --glow-b: rgba(238, 107, 103, .10);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 40px rgba(0, 0, 0, .35);
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; min-height: 100vh; color: var(--ink); font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-feature-settings: "cv11", "ss01";
+  background: radial-gradient(1100px 520px at 12% -12%, var(--glow-a), transparent 62%), radial-gradient(900px 460px at 96% -8%, var(--glow-b), transparent 60%), var(--page); background-attachment: fixed; }
 a { color: var(--link); text-decoration: none; } a:hover { text-decoration: underline; }
 button { font: inherit; color: inherit; }
-.num, td, th { font-variant-numeric: tabular-nums; }
+.num, td, th, .val { font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); } .ink2 { color: var(--ink-2); }
-.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
 [hidden] { display: none !important; }
-:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 6px; }
 
-header.top { border-bottom: 1px solid var(--grid); }
-.bar { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; padding: 12px 16px; }
-.brand { font-weight: 650; font-size: 15px; letter-spacing: -.01em; }
-.meta { margin-left: auto; display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
-.meta b { color: var(--ink-2); font-weight: 550; }
-.btn { background: none; border: 1px solid var(--grid); border-radius: 6px; padding: 3px 9px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; }
-.btn:hover { background: var(--wash); }
+/* Header */
+header.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: color-mix(in srgb, var(--page) 78%, transparent); border-bottom: 1px solid var(--ring); }
+.bar { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; padding: 12px 20px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -.015em; }
+.brand svg { width: 24px; height: 24px; }
+.meta { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--ring); background: var(--surface); color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
+.pill b { color: var(--ink); font-weight: 600; }
+button.pill { cursor: pointer; transition: background .12s, border-color .12s; } button.pill:hover { background: var(--wash); border-color: var(--base); }
+.pill svg { width: 14px; height: 14px; flex: none; }
+.spin svg { animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 details.pop { position: relative; }
 details.pop > summary { list-style: none; cursor: pointer; } details.pop > summary::-webkit-details-marker { display: none; }
-details.pop .panel { position: absolute; right: 0; top: 30px; width: min(400px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .16); z-index: 30; color: var(--ink); font-size: 12.5px; }
+details.pop .panel { position: absolute; right: 0; top: 38px; width: min(420px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); z-index: 30; color: var(--ink); font-size: 12.5px; }
+.panel h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; text-transform: uppercase; }
+.panel h4:not(:first-child) { margin-top: 14px; }
 .panel ul { margin: 0; padding: 0; list-style: none; } .panel li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
 .panel li .nm { flex: 1; min-width: 0; } .panel li small { color: var(--muted); display: block; word-break: break-word; }
+.panel p { margin: 0 0 6px; color: var(--ink-2); }
 .sdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
-.sdot.good { background: var(--good); } .sdot.warning { background: var(--warning); } .sdot.critical { background: var(--critical); }
+.sdot.good { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 18%, transparent); } .sdot.warning { background: var(--warning); } .sdot.critical { background: var(--critical); }
 
-main { padding: 20px 0 56px; }
-.lede { color: var(--ink-2); font-size: 13px; margin: 0 0 16px; max-width: 760px; }
+main { padding: 28px 0 64px; }
+.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin-bottom: 20px; }
+.hero h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.03em; line-height: 1.15; }
+.hero p { margin: 6px 0 0; color: var(--ink-2); font-size: 14px; max-width: 640px; }
+.keyline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.keyline .ramp { width: 120px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--z1) 0 10%, var(--z2) 10% 25%, var(--z3) 25% 75%, var(--z4) 75% 90%, var(--z5) 90%); }
+
+/* Alert banners */
+.alerts { display: grid; gap: 8px; margin-bottom: 16px; }
+.alert { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--zc) 55%, var(--ring)); background: color-mix(in srgb, var(--zc) 12%, var(--surface)); font-size: 13.5px; }
+.alert .bell { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--zc); flex: none; } .alert .bell svg { width: 15px; height: 15px; color: #fff; }
+.alert b { font-weight: 650; }
 
 /* Tiles */
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px 18px 14px; cursor: pointer; text-align: left; min-width: 0; display: flex; flex-direction: column; transition: border-color .12s; }
-.tile:hover { border-color: var(--base); }
-.tile[aria-expanded="true"] { border-color: var(--ink-2); box-shadow: 0 0 0 1px var(--ink-2); }
-.tname { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
-.tname small { font-weight: 400; color: var(--muted); font-size: 12px; white-space: nowrap; }
-.readout { display: flex; align-items: baseline; gap: 10px; margin: 10px 0 12px; flex-wrap: wrap; }
-.val { font-size: 40px; font-weight: 650; letter-spacing: -.025em; line-height: 1; }
-.val small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
-.zone { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.tile { --zc: var(--z3); position: relative; display: flex; flex-direction: column; text-align: left; min-width: 0; cursor: pointer; padding: 18px 20px 16px; border-radius: 20px; border: 1px solid var(--ring); box-shadow: var(--shadow);
+  background: radial-gradient(130% 70% at 50% 0%, color-mix(in srgb, var(--zc) 13%, transparent), transparent 62%), var(--surface); transition: transform .16s ease, border-color .16s, box-shadow .16s; }
+.tile:hover { transform: translateY(-2px); border-color: var(--base); }
+.tile[aria-expanded="true"] { border-color: color-mix(in srgb, var(--zc) 70%, var(--ink-2)); box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--zc) 70%, var(--ink-2)); }
+.thead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tn { font-size: 14px; font-weight: 650; letter-spacing: -.01em; } .th { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.dial { width: 100%; max-width: 250px; margin: 10px auto 0; } .dial svg { display: block; width: 100%; height: auto; overflow: visible; }
+.dial .needle { transform-box: view-box; transform-origin: 110px 112px; transform: rotate(var(--rot)); animation: sweep 1s cubic-bezier(.2, .9, .25, 1) backwards; }
+@keyframes sweep { from { transform: rotate(90deg); } }
+@media (prefers-reduced-motion: reduce) { .dial .needle { animation: none; } .tile { transition: none; } html { scroll-behavior: auto; } }
+.read { text-align: center; margin-top: 4px; }
+.val { font-size: 52px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
+.val small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 3px; }
+.zrow { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.zchip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 4px 11px 4px 9px; border-radius: 999px; background: color-mix(in srgb, var(--zc) 18%, transparent); border: 1px solid color-mix(in srgb, var(--zc) 45%, transparent); }
 .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
-.chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ink); white-space: nowrap; }
-.chip.quiet { border-color: var(--grid); color: var(--muted); font-weight: 500; }
-.scale { position: relative; display: grid; gap: 2px; height: 6px; grid-template-columns: 10fr 15fr 50fr 15fr 10fr; }
-.scale i:first-child { border-radius: 3px 0 0 3px; } .scale i:last-child { border-radius: 0 3px 3px 0; }
-.scale .mark { position: absolute; top: -5px; width: 3px; height: 16px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); box-shadow: 0 0 0 2px var(--surface); }
-.ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 5px; }
-.odds1 { font-size: 13px; color: var(--ink-2); margin-top: 12px; min-height: 58px; }
-.odds1 b { color: var(--ink); font-weight: 600; }
-.tfoot { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: auto; padding-top: 10px; font-size: 12px; color: var(--muted); }
-.tfoot .d span { margin-right: 10px; white-space: nowrap; } .tfoot .d b { font-weight: 400; color: var(--ink-2); }
-.spark { width: 92px; height: 26px; flex: none; } .spark svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.more { font-size: 12px; color: var(--link); white-space: nowrap; }
+.chip { font-size: 11.5px; font-weight: 650; padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--page); white-space: nowrap; }
+.chip.quiet { background: none; border: 1px solid var(--grid); color: var(--muted); font-weight: 500; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.stat { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--ring); min-width: 0; }
+.stat b { display: block; font-size: 20px; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat span { display: block; font-size: 12px; color: var(--ink-2); } .stat small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.tfoot { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: auto; padding-top: 14px; font-size: 12px; color: var(--muted); }
+.tfoot .d span { margin-right: 10px; white-space: nowrap; } .tfoot .d b { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.spark { width: 104px; height: 30px; flex: none; } .spark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ltbox { margin: 26px 2px 4px; }
+.ltbar { position: relative; height: 54px; }
+.ltbar .track { position: absolute; left: 0; right: 0; top: 30px; height: 8px; border-radius: 4px; background: var(--wash); border: 1px solid var(--ring); }
+.ltbar .band { position: absolute; top: 30px; height: 8px; border-radius: 4px; background: var(--ink-2); opacity: .55; }
+.ltbar .dot { position: absolute; top: 25px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); transform: translateX(-50%); box-shadow: 0 0 0 1px var(--ring); }
+.ltbar .tick { position: absolute; top: 22px; width: 2px; height: 24px; background: var(--muted); border-radius: 1px; transform: translateX(-50%); }
+.ltbar .tick span { position: absolute; bottom: 27px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+.ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.ltnote { font-size: 13px; color: var(--ink-2); margin-top: 14px; } .ltnote b { color: var(--ink); font-weight: 600; }
 
 /* Detail */
-.detail { margin-top: 28px; }
-.dhead { display: flex; align-items: baseline; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 4px; }
-.dhead h2 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+.detail { margin-top: 28px; scroll-margin-top: 70px; }
+.dcard { background: var(--surface); border: 1px solid var(--ring); border-radius: 20px; box-shadow: var(--shadow); padding: 22px 24px 26px; }
+.dhead { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.dhead h2 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -.02em; }
 .dhead .x { margin-left: auto; }
-.dsub { color: var(--ink-2); font-size: 13px; margin: 0 0 20px; max-width: 820px; }
-.dsub b { color: var(--ink); font-weight: 600; }
-section.blk { margin-top: 28px; }
-.bh { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; margin-bottom: 10px; }
-.bh h3 { font-size: 14px; margin: 0; font-weight: 650; }
-.bh .sub { color: var(--muted); font-size: 12.5px; }
-.bh .right { margin-left: auto; }
-.note { color: var(--muted); font-size: 12px; margin: 8px 0 0; max-width: 860px; }
-.seg { display: inline-flex; background: var(--wash); border-radius: 8px; padding: 2px; gap: 2px; }
-.seg button { background: none; border: 0; padding: 3px 10px; border-radius: 6px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
-.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--ring); font-weight: 550; }
-.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; }
+.dsub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 14px; max-width: 860px; } .dsub b { color: var(--ink); font-weight: 600; }
+.subnav { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 22px; }
+.subnav button { cursor: pointer; background: var(--surface-2); border: 1px solid var(--ring); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; color: var(--ink-2); } .subnav button:hover { background: var(--wash); color: var(--ink); }
+section.blk { margin-top: 30px; scroll-margin-top: 76px; }
+.bh { display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.bh h3 { font-size: 15px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+.bh .sub { color: var(--muted); font-size: 12.5px; } .bh .right { margin-left: auto; }
+.note { color: var(--muted); font-size: 12px; margin: 10px 0 0; max-width: 880px; }
+.seg { display: inline-flex; background: var(--wash); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { background: none; border: 0; padding: 4px 11px; border-radius: 7px; cursor: pointer; color: var(--ink-2); font-size: 12.5px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--ring), 0 1px 2px rgba(0, 0, 0, .08); font-weight: 600; }
+.card { background: var(--surface-2); border: 1px solid var(--ring); border-radius: 14px; }
 .scroll { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th { text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px 12px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-td { text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 10px 14px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+td { text-align: right; padding: 10px 14px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
 tr:last-child > td { border-bottom: 0; }
 td small { display: block; color: var(--muted); font-size: 11.5px; }
-tr.now > td { background: var(--wash); }
-tr.now > td:first-child { box-shadow: inset 3px 0 0 var(--ink); }
+tr.now > td { background: color-mix(in srgb, var(--zc, var(--z3)) 12%, transparent); }
+tr.now > td:first-child { box-shadow: inset 3px 0 0 var(--zc, var(--ink)); }
 tr.allrow > td { color: var(--ink-2); border-top: 1px solid var(--base); }
 th.sortable { cursor: pointer; } th.sortable:hover { color: var(--ink); }
-.zl { display: inline-flex; align-items: center; gap: 7px; font-weight: 550; }
-.zl small { display: inline; font-weight: 400; margin-left: 2px; }
+.zl { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; } .zl small { display: inline; font-weight: 400; margin-left: 2px; }
+.hb { display: block; height: 3px; border-radius: 2px; background: var(--grid); margin: 5px 0 0 auto; width: 64px; position: relative; } .hb b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--ink-2); }
 .ev { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
-.evc { padding: 12px 14px; font-size: 13px; color: var(--ink-2); }
-.evc h4 { margin: 0 0 4px; font-size: 13px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.evc { padding: 14px 16px; font-size: 13px; color: var(--ink-2); } .evc.wide { grid-column: 1 / -1; }
+.evc h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .dots { letter-spacing: 1px; font-size: 11px; color: var(--ink); } .dots i { font-style: normal; color: var(--base); }
 .grade { font-size: 11.5px; font-weight: 550; color: var(--ink-2); }
-.chart { width: 100%; height: 440px; } .chart.sm { height: 220px; } .chart.md { height: 300px; }
-.legend { display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); padding: 0 14px 12px; }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend .ln { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
+.chart { width: 100%; height: 460px; } .chart.sm { height: 230px; } .chart.md { height: 300px; }
+.legend { display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); padding: 0 16px 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; } .legend .ln { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
 
-/* Indicator rows */
-tr.ind { cursor: pointer; } tr.ind:hover > td { background: var(--wash); }
-tr.ind td:first-child { white-space: normal; min-width: 210px; }
-tr.grp > td { background: none; color: var(--muted); font-size: 12px; font-weight: 600; padding-top: 14px; border-bottom: 1px solid var(--grid); text-align: left; }
+tr.ind { cursor: pointer; transition: background .1s; } tr.ind:hover > td { background: var(--wash); }
+tr.ind td:first-child { white-space: normal; min-width: 220px; font-weight: 500; }
+tr.grp > td { background: none; color: var(--muted); font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding-top: 16px; padding-bottom: 6px; text-align: left; }
 .pos { position: relative; width: 120px; height: 6px; background: linear-gradient(90deg, var(--z1) 0 10%, var(--z2) 10% 25%, var(--z3) 25% 75%, var(--z4) 75% 90%, var(--z5) 90%); border-radius: 3px; display: inline-block; vertical-align: middle; }
-.pos .mark { position: absolute; top: -4px; width: 3px; height: 14px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); box-shadow: 0 0 0 2px var(--surface); }
-.car { display: inline-block; width: 10px; color: var(--muted); transition: transform .12s; } tr.open .car { transform: rotate(90deg); }
-tr.exp > td { white-space: normal; text-align: left; background: var(--wash); padding: 14px 16px 16px; }
-.expg { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; }
-.expg p { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); max-width: 520px; } .expg p b { color: var(--ink); font-weight: 600; }
-.mini { font-size: 12.5px; margin-top: 6px; } .mini th, .mini td { padding: 5px 8px; background: none !important; }
-.badge { font-size: 11px; color: var(--muted); border: 1px solid var(--grid); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
-details.fold { margin-top: 28px; }
-details.fold > summary { cursor: pointer; font-size: 14px; font-weight: 650; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pos .mark { position: absolute; top: -5px; width: 4px; height: 16px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); box-shadow: 0 0 0 2px var(--surface-2); }
+.car { display: inline-block; width: 12px; color: var(--muted); transition: transform .12s; } tr.open .car { transform: rotate(90deg); }
+tr.exp > td { white-space: normal; text-align: left; background: var(--wash); padding: 16px 18px 18px; }
+.expg { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 22px; }
+.expg p { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); max-width: 540px; } .expg p b { color: var(--ink); font-weight: 600; }
+.mini { font-size: 12.5px; margin-top: 6px; } .mini th, .mini td { padding: 6px 8px; background: none !important; }
+.badge { font-size: 11px; color: var(--muted); border: 1px solid var(--grid); border-radius: 5px; padding: 0 6px; margin-left: 6px; white-space: nowrap; font-weight: 400; }
+details.fold { margin-top: 14px; border: 1px solid var(--ring); border-radius: 14px; background: var(--surface-2); scroll-margin-top: 76px; }
+details.fold > summary { cursor: pointer; font-size: 14px; font-weight: 650; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 13px 16px; }
 details.fold > summary::-webkit-details-marker { display: none; }
 details.fold > summary::before { content: "›"; display: inline-block; width: 10px; color: var(--muted); transition: transform .12s; }
 details.fold[open] > summary::before { transform: rotate(90deg); }
 details.fold > summary .sub { font-weight: 400; color: var(--muted); font-size: 12.5px; }
-details.fold > .inner { margin-top: 10px; }
-.pos-t { color: var(--ink); } .neg-t { color: var(--ink); }
-.cat { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 12px; font-size: 13px; padding: 12px 14px; }
-.cat .d { color: var(--muted); }
+details.fold > .inner { padding: 0 16px 16px; } details.fold .card { background: var(--surface); }
+.cat { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 5px 12px; font-size: 13px; padding: 14px 16px; } .cat .d { color: var(--muted); }
 .kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.kv > div { padding: 12px 14px; } .kv .k { font-size: 12px; color: var(--muted); } .kv .v { font-size: 22px; font-weight: 650; letter-spacing: -.02em; } .kv .s { font-size: 12px; color: var(--ink-2); }
-footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--grid); color: var(--muted); font-size: 12px; }
-footer p { margin: 0 0 8px; max-width: 860px; }
-.empty { padding: 40px 0; color: var(--muted); }
-@media (max-width: 860px) {
-  .tiles { grid-template-columns: 1fr; } .odds1 { min-height: 0; }
-  .ev, .expg { grid-template-columns: 1fr; } .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .chart { height: 380px; }
+.kv > div { padding: 14px 16px; } .kv .k { font-size: 12px; color: var(--muted); } .kv .v { font-size: 24px; font-weight: 700; letter-spacing: -.025em; } .kv .s { font-size: 12px; color: var(--ink-2); }
+footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--ring); color: var(--muted); font-size: 12px; } footer p { margin: 0 0 8px; max-width: 880px; }
+.empty { padding: 60px 0; color: var(--muted); grid-column: 1 / -1; text-align: center; }
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--page); padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 500; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); transition: opacity .2s, transform .2s; z-index: 50; white-space: nowrap; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 900px) {
+  .tiles { grid-template-columns: 1fr; } .ev, .expg { grid-template-columns: 1fr; } .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart { height: 380px; } .dcard { padding: 18px 14px 20px; border-radius: 16px; } .wrap { padding: 0 14px; } .hero h1 { font-size: 22px; } .keyline { display: none; }
+  .pill .lbl { display: none; }
 }
 </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap bar">
-    <div class="brand">Market Gauges</div>
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 23a12 12 0 0 1 4.2-9.1" fill="none" stroke="var(--z1)" stroke-width="4" stroke-linecap="round"/><path d="M11.6 11.8a12 12 0 0 1 8.8 0" fill="none" stroke="var(--z3)" stroke-width="4" stroke-linecap="round"/><path d="M23.8 13.9A12 12 0 0 1 28 23" fill="none" stroke="var(--z5)" stroke-width="4" stroke-linecap="round"/><path d="M16 23l5-7.5" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="23" r="2.4" fill="var(--ink)"/></svg>Market Gauges</div>
     <div class="meta">
-      <span id="asof"></span>
-      <details class="pop" id="srcpop"><summary class="btn"><span class="sdot" id="srcdot"></span><span id="srclbl">Sources</span></summary><div class="panel" id="srcpanel"></div></details>
-      <button class="btn" id="theme" type="button" aria-label="Switch between light and dark">Theme</button>
+      <span class="pill" id="asof"></span>
+      <details class="pop" id="srcpop"><summary class="pill"><span class="sdot" id="srcdot"></span><span id="srclbl" class="lbl">Status</span></summary><div class="panel" id="srcpanel"></div></details>
+      <button class="pill" id="refresh" type="button" title="Check for newer data"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.6 2.4v3h-3"/></svg><span class="lbl">Refresh</span></button>
+      <button class="pill" id="theme" type="button" aria-label="Switch between light and dark" title="Light or dark"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13z"/><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
     </div>
   </div>
 </header>
 <main class="wrap">
-  <p class="lede" id="lede">Contrarian gauges. 0 is extreme fear, historically the time to buy; 100 is complacency. Each one shows what the market actually did after readings like today's. Select a gauge for the detail.</p>
+  <div class="hero"><div><h1>Is it time to buy, or time to be careful?</h1><p>Each gauge ranks today's fear against history and shows what the market actually did after readings like this one. Select a gauge to see what is behind it.</p></div>
+    <div class="keyline"><span>Fear · buy</span><span class="ramp"></span><span>Complacent · caution</span></div></div>
+  <div class="alerts" id="alerts" hidden></div>
   <div class="tiles" id="tiles"><div class="empty">Loading…</div></div>
   <div class="detail" id="detail" hidden></div>
   <footer id="foot"></footer>
 </main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
 <script>
 "use strict";
@@ -193,7 +234,8 @@ const ZC = { buy: "--z1", fear: "--z2", neutral: "--z3", calm: "--z4", caution: 
 const HZ = ["1m", "3m", "6m", "12m"];
 const HNAME = { "1m": "1 month", "3m": "3 months", "6m": "6 months", "12m": "12 months" };
 const GRADE = { strong: [3, "Strong evidence"], moderate: [2, "Moderate evidence"], weak: [1, "Weak evidence"], none: [0, "No edge found"] };
-let D = null, H = null, jump = false, view = null, range = "5Y", openInd = null, charts = [], sortKey = null, sortDir = -1, epSide = "buy";
+const ZONES = [["buy", 0, 10], ["fear", 10, 25], ["neutral", 25, 75], ["calm", 75, 90], ["caution", 90, 100]];
+let D = null, H = null, jump = false, view = null, range = "5Y", openInd = null, charts = [], sortKey = null, sortDir = -1, epSide = "buy", lastLoad = 0, firstPaint = true;
 
 const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -204,69 +246,87 @@ const sw = key => `<i class="sw" style="background:var(${ZC[key]})"></i>`;
 const dots = g => { const n = (GRADE[g] || GRADE.none)[0]; return `<span class="dots" aria-hidden="true">${"●".repeat(n)}<i>${"●".repeat(3 - n)}</i></span> <span class="grade">${(GRADE[g] || GRADE.none)[1]}</span>`; };
 const bname = g => g.id === "ai" ? "the semiconductor index" : "the S&P 500";
 const signal = z => z.key === "buy" ? `<span class="chip">Buy zone</span>` : z.key === "caution" ? `<span class="chip">Caution zone</span>` : `<span class="chip quiet">No signal</span>`;
+const thr = id => (D.alerts && D.alerts.thresholds && D.alerts.thresholds[id]) || { below: 10, above: 90 };
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2600); }
 
-function spark(vals) {
+/* Half-circle dial: five zone arcs, alert ticks, needle. 0 is at the left, 100 at the right. */
+function dial(g) {
+  const cx = 110, cy = 112, r = 88, gap = 1.1, t = thr(g.id);
+  const pt = (s, rad = r) => { const a = Math.PI * (1 - s / 100); return [(cx + rad * Math.cos(a)).toFixed(2), (cy - rad * Math.sin(a)).toFixed(2)]; };
+  const arcs = ZONES.map(([k, lo, hi]) => { const a = pt(lo + (lo > 0 ? gap / 2 : 0)), b = pt(hi - (hi < 100 ? gap / 2 : 0)); return `<path d="M${a[0]} ${a[1]} A${r} ${r} 0 0 1 ${b[0]} ${b[1]}" fill="none" stroke="var(${ZC[k]})" stroke-width="13" opacity="${k === g.zone.key ? 1 : .42}"/>`; }).join("");
+  const tick = (s, lab) => { const a = pt(s, r + 10), b = pt(s, r + 18); return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"><title>${lab}</title></line>`; };
+  return `<svg viewBox="0 0 220 128" role="img" aria-label="Score ${g.score.toFixed(0)} of 100, ${esc(g.zone.label)}">${arcs}${tick(t.below, "Alert at or below " + t.below)}${tick(t.above, "Alert at or above " + t.above)}
+    <g class="needle" style="--rot:${(g.score * 1.8).toFixed(1)}deg${firstPaint ? "" : ";animation:none"}"><path d="M${cx - r + 20} ${cy} L${cx} ${cy - 3.6} L${cx + 9} ${cy} L${cx} ${cy + 3.6} Z" fill="var(--ink)"/></g>
+    <circle cx="${cx}" cy="${cy}" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5"/>
+    <text x="${cx - r}" y="${cy + 15}" text-anchor="middle" font-size="10" fill="var(--muted)">0</text><text x="${cx + r}" y="${cy + 15}" text-anchor="middle" font-size="10" fill="var(--muted)">100</text></svg>`;
+}
+
+function spark(vals, id) {
   if (!vals || vals.length < 2) return "";
-  const w = 92, h = 26, x = i => i / (vals.length - 1) * w, y = v => h - 2 - v / 100 * (h - 4);
+  const w = 104, h = 30, x = i => i / (vals.length - 1) * w, y = v => h - 2 - v / 100 * (h - 4);
   const d = vals.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join("");
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Score, last 6 months"><line x1="0" x2="${w}" y1="${y(10)}" y2="${y(10)}" stroke="var(--z1)" stroke-width="1" stroke-dasharray="2 3"/><line x1="0" x2="${w}" y1="${y(90)}" y2="${y(90)}" stroke="var(--z5)" stroke-width="1" stroke-dasharray="2 3"/><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Score, last 6 months"><defs><linearGradient id="sg-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ink)" stop-opacity=".22"/><stop offset="1" stop-color="var(--ink)" stop-opacity="0"/></linearGradient></defs><path d="${d} L${w} ${h} L0 ${h} Z" fill="url(#sg-${id})"/><path d="${d}" fill="none" stroke="var(--ink)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
-function oddsLine(g) {
+function gaugeTile(g) {
   const z = g.now.zone.h["3m"], b = g.now.base["3m"];
-  if (!z) return "Too few past readings in this zone to say.";
-  return `After readings like this, ${esc(bname(g))} was higher 3 months later <b>${z.hit}%</b> of the time, median <b>${sgn(z.median)}</b>. <span class="muted">Any day: ${b.hit}%, ${sgn(b.median)}.</span>`;
-}
-
-function gaugeTile(g, sub) {
-  return `<button class="tile" type="button" data-view="${g.id}" aria-expanded="${view === g.id}">
-    <div class="tname"><span>${esc(g.name)}</span><small>${sub}</small></div>
-    <div class="readout"><span class="val num">${g.score.toFixed(0)}<small>/100</small></span><span class="zone">${sw(g.zone.key)}${esc(g.zone.label)}</span>${signal(g.zone)}</div>
-    <div class="scale" aria-hidden="true">${Object.values(ZC).map(c => `<i style="background:var(${c})"></i>`).join("")}<span class="mark" style="left:${g.score}%"></span></div>
-    <div class="ends"><span>Extreme fear · buy</span><span>Complacent · caution</span></div>
-    <div class="odds1">${oddsLine(g)}</div>
-    <div class="tfoot"><div class="d"><span><b>1D</b> ${sgn(g.chg.d1, 0, "")}</span><span><b>1W</b> ${sgn(g.chg.w1, 0, "")}</span><span><b>1M</b> ${sgn(g.chg.m1, 0, "")}</span></div><div class="spark">${spark(g.spark)}</div></div>
+  const stats = z ? `<div class="stat"><b>${z.hit}%</b><span>up 3 months later</span><small>any day ${b.hit}%</small></div><div class="stat"><b>${sgn(z.median)}</b><span>median 3-month return</span><small>any day ${sgn(b.median)}</small></div>` : `<div class="stat" style="grid-column:1/-1"><span>Too few past readings in this zone to say.</span></div>`;
+  return `<button class="tile" type="button" data-view="${g.id}" aria-expanded="${view === g.id}" style="--zc:var(${ZC[g.zone.key]})">
+    <div class="thead"><span class="tn">${esc(g.name)}</span><span class="th">next 1–12 months</span></div>
+    <div class="dial">${dial(g)}</div>
+    <div class="read"><span class="val">${g.score.toFixed(0)}<small>/ 100</small></span><div class="zrow"><span class="zchip">${sw(g.zone.key)}${esc(g.zone.label)}</span>${signal(g.zone)}</div></div>
+    <div class="stats" title="What ${esc(bname(g))} did after past readings in this zone">${stats}</div>
+    <div class="tfoot"><div class="d"><span>1D <b>${sgn(g.chg.d1, 0, "")}</b></span><span>1W <b>${sgn(g.chg.w1, 0, "")}</b></span><span>1M <b>${sgn(g.chg.m1, 0, "")}</b></span></div><div class="spark">${spark(g.spark, g.id)}</div></div>
   </button>`;
 }
 
 function ltTile(L) {
-  if (!L) return `<div class="tile" style="cursor:default"><div class="tname"><span>Next 10 years</span></div><div class="odds1">Long-term model unavailable (see Sources).</div></div>`;
-  const e = L.expected;
-  return `<button class="tile" type="button" data-view="lt" aria-expanded="${view === "lt"}">
-    <div class="tname"><span>S&amp;P 500 · next 10 years</span><small>valuation, not timing</small></div>
-    <div class="readout"><span class="val num">${sgn(e.mid)}<small>a year</small></span><span class="zone">${esc(L.zone)}</span></div>
-    <div class="odds1">Expected return implied by valuation. The two models say <b>${sgn(e.low)}</b> and <b>${sgn(e.high)}</b> a year. <span class="muted">Long-run average ${sgn(L.hist_avg)}${L.treasury10 != null ? `; a 10-year Treasury yields ${L.treasury10.toFixed(1)}%` : ""}.</span></div>
-    <div class="tfoot"><div class="d">${L.models.map(m => `<span><b>${esc(m.name.replace("Investor ", "").replace("Shiller ", ""))}</b> ${m.pct.toFixed(0)}th pct</span>`).join("")}</div></div>
+  if (!L) return `<div class="tile" style="cursor:default"><div class="thead"><span class="tn">S&amp;P 500 · next 10 years</span></div><p class="ltnote">Long-term model unavailable (see Status).</p></div>`;
+  const e = L.expected, lo = Math.min(-5, Math.floor(e.low - 2)), hi = Math.max(15, Math.ceil(L.hist_avg + 2)), x = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
+  const zc = e.mid < 5 ? "--z5" : e.mid > 12 ? "--z1" : "--z3";   // expensive market = the complacent end of the scale
+  return `<button class="tile" type="button" data-view="lt" aria-expanded="${view === "lt"}" style="--zc:var(${zc})">
+    <div class="thead"><span class="tn">S&amp;P 500 · next 10 years</span><span class="th">valuation, not timing</span></div>
+    <div class="read" style="margin-top:26px"><span class="val">${sgn(e.mid)}<small>a year</small></span><div class="zrow"><span class="zchip">${esc(L.zone)} outlook</span></div></div>
+    <div class="ltbox"><div class="ltbar"><div class="track"></div><div class="band" style="left:${x(e.low)}%;width:${(x(e.high) - x(e.low)).toFixed(1)}%" title="The two models: ${sgn(e.low)} and ${sgn(e.high)} a year"></div><div class="dot" style="left:${x(e.mid)}%"></div>${L.treasury10 != null ? `<div class="tick" style="left:${x(L.treasury10)}%"><span>Treasury ${L.treasury10.toFixed(1)}%</span></div>` : ""}<div class="tick" style="left:${x(L.hist_avg)}%"><span>Average ${sgn(L.hist_avg)}</span></div></div><div class="ends"><span>${sgn(lo, 0)} a year</span><span>${sgn(hi, 0)}</span></div></div>
+    <p class="ltnote">Valuation implies <b>${sgn(e.low)}</b> to <b>${sgn(e.high)}</b> a year, against a long-run average of ${sgn(L.hist_avg)}.</p>
+    <div class="tfoot"><div class="d">${L.models.map(m => `<span>${esc(m.name.replace("Investor ", "").replace("Shiller ", ""))} <b>${m.pct.toFixed(0)}th pct</b></span>`).join("")}</div></div>
   </button>`;
 }
 
 function renderTiles() {
-  $("#tiles").innerHTML = gaugeTile(D.gauges.spx, "next 1–12 months") + gaugeTile(D.gauges.ai, "next 1–12 months") + ltTile(D.longterm);
+  $("#tiles").innerHTML = gaugeTile(D.gauges.spx) + gaugeTile(D.gauges.ai) + ltTile(D.longterm);
+  firstPaint = false;
   document.querySelectorAll(".tile[data-view]").forEach(b => b.onclick = () => { jump = view !== b.dataset.view; location.hash = view === b.dataset.view ? "" : b.dataset.view; });
+  const act = (D.alerts && D.alerts.active) || [], el = $("#alerts");
+  el.hidden = !act.length;
+  el.innerHTML = act.map(a => `<div class="alert" style="--zc:var(${a.kind === "below" ? "--z1" : "--z5"})"><span class="bell"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5a4 4 0 0 0-4 4v2.6L2.8 10.6a.6.6 0 0 0 .5.9h9.4a.6.6 0 0 0 .5-.9L12 8.1V5.5a4 4 0 0 0-4-4zM6.4 12.7a1.7 1.7 0 0 0 3.2 0z"/></svg></span><span><b>${a.kind === "below" ? "Buy alert" : "Caution alert"}: ${esc(a.name)} at ${a.score.toFixed(0)}</b>, ${a.kind === "below" ? "at or below" : "at or above"} your threshold of ${a.threshold}${a.days > 1 ? ` for ${a.days} sessions` : ""}. <a href="#${a.gauge}">See what followed past readings</a></span></div>`).join("");
 }
 
 /* ---------------------------------------------------------------- detail */
 function oddsTable(g) {
-  const cell = s => s ? `<td title="Average ${sgn(s.mean)} · middle 80% of outcomes ${sgn(s.p10)} to ${sgn(s.p90)} · ${s.n.toLocaleString()} days">${sgn(s.median)}<small>${s.hit}% up</small></td>` : `<td class="muted">—</td>`;
-  const rows = g.odds.zones.map(z => `<tr class="${z.key === g.zone.key ? "now" : ""}"><td><span class="zl">${sw(z.key)}${esc(z.label)} <small class="muted">${z.lo}–${z.hi}</small></span>${z.key === g.zone.key ? `<span class="badge">now</span>` : ""}</td><td>${z.episodes}<small>${z.days.toLocaleString()} days</small></td>${HZ.map(h => cell(z.h[h])).join("")}</tr>`).join("");
+  const cell = s => s ? `<td title="Average ${sgn(s.mean)} · middle 80% of outcomes ${sgn(s.p10)} to ${sgn(s.p90)} · ${s.n.toLocaleString()} days">${sgn(s.median)}<small>${s.hit}% up</small><i class="hb"><b style="width:${s.hit}%"></b></i></td>` : `<td class="muted">—</td>`;
+  const rows = g.odds.zones.map(z => `<tr class="${z.key === g.zone.key ? "now" : ""}" style="--zc:var(${ZC[z.key]})"><td><span class="zl">${sw(z.key)}${esc(z.label)} <small class="muted">${z.lo}–${z.hi}</small></span>${z.key === g.zone.key ? `<span class="badge">now</span>` : ""}</td><td>${z.episodes}<small>${z.days.toLocaleString()} days</small></td>${HZ.map(h => cell(z.h[h])).join("")}</tr>`).join("");
   return `<div class="card scroll"><table><thead><tr><th>Score zone</th><th>Episodes</th>${HZ.map(h => `<th>${HNAME[h]} later</th>`).join("")}</tr></thead><tbody>${rows}<tr class="allrow"><td>Any day</td><td><small>${g.odds.days.toLocaleString()} days</small></td>${HZ.map(h => cell(g.odds.base[h])).join("")}</tr></tbody></table></div>
-  <p class="note">Median price return of ${esc(bname(g))} after every day the score sat in each zone, and how often it was positive, since ${fdate(g.odds.since, { year: "numeric" })}. Hover a cell for the average and the range. Windows overlap, so days within an episode are not independent: the episode count is the honest sample size.</p>`;
+  <p class="note">Median price return of ${esc(bname(g))} after every day the score sat in each zone, and how often it was positive (the bar), since ${fdate(g.odds.since, { year: "numeric" })}. Hover a cell for the average and the range. Windows overlap, so days within an episode are not independent: the episode count is the honest sample size.</p>`;
 }
 
 function evCard(title, e, want, benchmark) {
-  const h = e.h["3m"];
-  if (!h) return "";
-  const dir = want === "above" ? "beat" : "lagged";
-  const ok = want === "above" ? h.excess > 0 : h.excess < 0;
+  const h = e.h["3m"]; if (!h) return "";
+  const ok = want === "above" ? h.excess > 0 : h.excess < 0, verb = want === "above" ? "beat" : "lagged";
   const halves = h.pre != null && h.post != null ? ` Before 2010: ${sgn(h.pre, 1, "")} pts; since: ${sgn(h.post, 1, "")} pts.` : h.post != null ? ` All of this history is after 2008.` : "";
   const p = e.p == null ? "" : ` Chance of a gap this large by luck: ${e.p < 0.01 ? "under 1%" : Math.round(e.p * 100) + "%"}.`;
-  return `<div class="card evc"><h4>${title} ${dots(e.grade)}</h4>${e.episodes} episodes. Three months later ${esc(benchmark)} ${ok ? dir : "did not " + (want === "above" ? "beat" : "lag")} its average by ${Math.abs(h.excess).toFixed(1)} points (${sgn(h.mean)} vs ${sgn(h.base_mean)}), up ${h.hit}% of the time vs ${h.base_hit}%.${halves}${p}</div>`;
+  return `<div class="card evc"><h4>${title} ${dots(e.grade)}</h4>${e.episodes} episodes. Three months later ${esc(benchmark)} ${ok ? verb : "did not " + (want === "above" ? "beat" : "lag")} its average by ${Math.abs(h.excess).toFixed(1)} points (${sgn(h.mean)} vs ${sgn(h.base_mean)}), up ${h.hit}% of the time vs ${h.base_hit}%.${halves}${p}</div>`;
+}
+
+function checkCard(c, g) {
+  const row = r => `<tr><td style="white-space:normal">${esc(r.key === "yes" ? c.yes : c.no)}<small>${r.episodes} episodes · ${r.days} days</small></td>${HZ.map(h => r.h[h] ? `<td>${sgn(r.h[h].mean)}<small>${r.h[h].hit}% up</small></td>` : "<td>—</td>").join("")}</tr>`;
+  return `<div class="card evc wide"><h4>${esc(c.name)} <span class="chip quiet">${c.flag ? "Blowing out now" : "Calm now"} · ${c.now}th percentile</span></h4>The buy zone was worth much less when credit markets were breaking at the same time, as in 2001 and 2008. Average return of ${esc(bname(g))} after buy-zone days:
+    <div class="scroll"><table class="mini"><thead><tr><th>Buy-zone days with…</th>${HZ.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${c.rows.map(row).join("")}</tbody></table></div><p class="note" style="margin-top:6px">${esc(c.note)} High-yield and Baa spreads are under "Tested, not scored".</p></div>`;
 }
 
 function indRow(i, cols) {
-  const open = openInd === i.id;
-  const stale = i.stale ? `<span class="badge">stale</span>` : "";
-  let h = `<tr class="ind ${open ? "open" : ""}" data-ind="${i.id}" tabindex="0" aria-expanded="${open}"><td><span class="car">›</span> ${esc(i.name)}${stale}</td><td>${fval(i)}</td><td>${i.score == null ? "—" : `<span class="pos" title="${i.score.toFixed(0)} of 100 (0 = most fearful reading in its history)"><span class="mark" style="left:${i.score}%"></span></span>`}</td><td>${i.score == null ? "—" : i.score.toFixed(0)}</td><td>${i.evidence ? dots(i.evidence.fear.grade) : `<span class="muted">short history</span>`}</td><td class="muted">${fdate(i.as_of, { month: "short", day: "numeric" })}</td></tr>`;
+  const open = openInd === i.id, stale = i.stale ? `<span class="badge">stale</span>` : "";
+  let h = `<tr class="ind ${open ? "open" : ""}" data-ind="${i.id}" tabindex="0" aria-expanded="${open}"><td><span class="car">›</span> ${esc(i.name)}${stale}</td><td>${fval(i)}</td><td>${i.score == null ? "—" : `<span class="pos" title="${i.score.toFixed(0)} of 100 (0 = most fearful reading in its history)"><span class="mark" style="left:${i.score}%"></span></span>`}</td><td>${i.score == null ? "—" : i.score.toFixed(0)}</td><td>${i.evidence ? dots(i.evidence.fear.grade) : `<span class="muted">too little history</span>`}</td><td class="muted">${fdate(i.as_of, { month: "short", day: "numeric" })}</td></tr>`;
   if (open) h += `<tr class="exp"><td colspan="${cols}">${indDetail(i)}</td></tr>`;
   return h;
 }
@@ -283,15 +343,13 @@ function indDetail(i) {
 
 function indTable(g, role) {
   const list = g.indicators.filter(i => i.role === role), cols = 6;
-  let body = "";
-  if (role === "scored") for (const p of g.pillars) body += `<tr class="grp"><td colspan="${cols}">${esc(p.name)} · ${p.score.toFixed(0)}</td></tr>` + list.filter(i => i.pillar === p.name).map(i => indRow(i, cols)).join("");
-  else body = list.map(i => indRow(i, cols)).join("");
+  const groups = role === "scored" ? g.pillars.map(p => [p.name + " · " + p.score.toFixed(0), list.filter(i => i.pillar === p.name)]) : [...new Set(list.map(i => i.pillar || "Other"))].map(n => [n, list.filter(i => (i.pillar || "Other") === n)]);
+  const body = groups.map(([n, rows]) => `<tr class="grp"><td colspan="${cols}">${esc(n)}</td></tr>` + rows.map(i => indRow(i, cols)).join("")).join("");
   return `<div class="card scroll"><table><thead><tr><th>${role === "scored" ? "Input" : "Metric"}</th><th>Now</th><th>Fear ← → Calm</th><th>Rank</th><th>Evidence as a buy signal</th><th>As of</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
 function episodesTable(g) {
-  const list = g.episodes[epSide] || [];
-  const c = v => v == null ? `<td class="muted">—</td>` : `<td>${sgn(v)}</td>`;
+  const list = g.episodes[epSide] || [], c = v => v == null ? `<td class="muted">—</td>` : `<td>${sgn(v)}</td>`;
   const rows = list.map(e => `<tr><td>${fdate(e.start)}${e.open ? `<span class="badge">open</span>` : ""}</td><td>${e.days}</td><td>${e.extreme.toFixed(0)}</td>${HZ.map(h => c(e[h])).join("")}<td>${sgn(e.worst)}</td></tr>`).join("");
   return `<div class="card scroll" style="max-height:420px;overflow-y:auto"><table><thead><tr><th>First day in zone</th><th>Days</th><th>${epSide === "buy" ? "Lowest" : "Highest"} score</th>${HZ.map(h => `<th>+${h}</th>`).join("")}<th>Worst point, next 6m</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="muted">None yet.</td></tr>`}</tbody></table></div>
   <p class="note">Price return of ${esc(bname(g))} from the close of the first day in the zone. Visits less than a month apart count as one episode. "Worst point" is the lowest close over the following six months, relative to that first day.</p>`;
@@ -306,26 +364,27 @@ function aiContext() {
   const cats = (A.catalysts || []).length ? `<div class="card cat">${A.catalysts.map(c => `<span class="d">${fdate(c.date, { weekday: "short", month: "short", day: "numeric" })}</span><span>${esc(c.label)}</span>`).join("")}</div>` : `<p class="note">Nothing scheduled in the next 30 days.</p>`;
   const g = A.gpu_spot;
   const gpu = g ? `<div class="card"><div class="chart sm" id="gpuchart"></div></div><p class="note">Equal-weight index of Nebius pre-emptible GPU spot prices (${g.series} platform and region series; 100 = ${fdate(g.since)}). Now ${g.value.toFixed(0)}${g.chg_1w != null ? `, ${sgn(g.chg_1w)} over a week` : ""}. Falling prices mean spare compute. Only ${g.days} days of history, so it cannot be tested yet and is not in the score.</p>` : `<p class="note">No GPU spot data.</p>`;
-  return `<details class="fold" data-fold="co"><summary>AI companies <span class="sub">${rows.length} names · performance and earnings</span></summary><div class="inner">${tbl}</div></details>
-  <details class="fold" data-fold="cat"><summary>Catalysts <span class="sub">next 30 days</span></summary><div class="inner">${cats}</div></details>
-  <details class="fold" data-fold="gpu"><summary>GPU spot prices <span class="sub">compute demand, context only</span></summary><div class="inner">${gpu}</div></details>`;
+  return `<details class="fold" id="sec-co" data-fold="co"><summary>AI companies <span class="sub">${rows.length} names · performance and earnings</span></summary><div class="inner">${tbl}</div></details>
+  <details class="fold" id="sec-cat" data-fold="cat"><summary>Catalysts <span class="sub">next 30 days</span></summary><div class="inner">${cats}</div></details>
+  <details class="fold" id="sec-gpu" data-fold="gpu"><summary>GPU spot prices <span class="sub">compute demand, context only</span></summary><div class="inner">${gpu}</div></details>`;
 }
 
 const folds = new Set();
 function gaugeDetail(g) {
-  const cov = g.coverage.live < g.coverage.of ? ` Only ${g.coverage.live} of ${g.coverage.of} inputs are live.` : "";
-  const z3 = g.now.zone.h["3m"];
-  return `<div class="dhead"><h2>${esc(g.name)}</h2><span class="zone">${sw(g.zone.key)}${g.score.toFixed(1)} · ${esc(g.zone.label)}</span>${signal(g.zone)}<a class="x" href="#">Close</a></div>
-  <p class="dsub">${g.zone_days} session${g.zone_days === 1 ? "" : "s"} in this zone. ${esc(g.benchmark)} ${g.price.toLocaleString()}, ${sgn(g.price_chg.d1, 2)} on the day, ${sgn(g.price_chg.from_high)} from its 52-week high.${cov}${z3 ? ` In this zone the middle 80% of 3-month outcomes ran from <b>${sgn(z3.p10)}</b> to <b>${sgn(z3.p90)}</b>.` : ""}</p>
-  <section class="blk" style="margin-top:0"><div class="bh"><h3>What happened next</h3><span class="sub">every day since ${fdate(g.odds.since, { year: "numeric" })}, grouped by score</span></div>${oddsTable(g)}
-    <div class="ev">${evCard("Buy side · score 10 or lower", g.evidence.fear, "above", bname(g))}${evCard("Sell side · score 90 or higher", g.evidence.calm, "below", bname(g))}</div></section>
-  <section class="blk"><div class="bh"><h3>History</h3><span class="sub">score above, ${esc(bname(g))} below</span><div class="right seg" id="rangeseg">${["1Y", "5Y", "10Y", "Max"].map(r => `<button type="button" aria-pressed="${r === range}" data-range="${r}">${r}</button>`).join("")}</div></div>
-    <div class="card"><div class="chart" id="hist"></div><div class="legend"><span><i class="sw" style="background:var(--z1);opacity:.45"></i>Buy zone (score ≤ 10)</span><span><i class="sw" style="background:var(--z5);opacity:.45"></i>Caution zone (score ≥ 90)</span><span><i class="sw" style="background:var(--z1);opacity:.3"></i>On the price chart: days spent in the buy zone</span></div></div></section>
-  <section class="blk"><div class="bh"><h3>What is in the score</h3><span class="sub">${g.coverage.of} inputs, each ranked against its own history · select a row for its chart and its own track record</span></div>${indTable(g, "scored")}
+  const cov = g.coverage.live < g.coverage.of ? ` Only ${g.coverage.live} of ${g.coverage.of} inputs are live.` : "", z3 = g.now.zone.h["3m"], t = thr(g.id);
+  const nav = [["sec-odds", "What happened next"], ["sec-hist", "History"], ["sec-in", "Inputs"], ["sec-ctx", "Tested, not scored"], ["sec-ep", "Past signals"]].concat(g.id === "ai" ? [["sec-co", "AI companies"], ["sec-cat", "Catalysts"], ["sec-gpu", "GPU prices"]] : []);
+  return `<div class="dcard" style="--zc:var(${ZC[g.zone.key]})"><div class="dhead"><h2>${esc(g.name)}</h2><span class="zchip">${sw(g.zone.key)}${g.score.toFixed(1)} · ${esc(g.zone.label)}</span>${signal(g.zone)}<a class="x pill" href="#">Close</a></div>
+  <p class="dsub">${g.zone_days} session${g.zone_days === 1 ? "" : "s"} in this zone. ${esc(g.benchmark)} ${g.price.toLocaleString()}, ${sgn(g.price_chg.d1, 2)} on the day, ${sgn(g.price_chg.from_high)} from its 52-week high.${cov}${z3 ? ` In this zone the middle 80% of 3-month outcomes ran from <b>${sgn(z3.p10)}</b> to <b>${sgn(z3.p90)}</b>.` : ""} You are alerted at <b>${t.below}</b> or lower and <b>${t.above}</b> or higher.</p>
+  <nav class="subnav">${nav.map(([id, n]) => `<button type="button" data-go="${id}">${n}</button>`).join("")}</nav>
+  <section class="blk" id="sec-odds" style="margin-top:0"><div class="bh"><h3>What happened next</h3><span class="sub">every day since ${fdate(g.odds.since, { year: "numeric" })}, grouped by score</span></div>${oddsTable(g)}
+    <div class="ev">${evCard("Buy side · score 10 or lower", g.evidence.fear, "above", bname(g))}${evCard("Sell side · score 90 or higher", g.evidence.calm, "below", bname(g))}${(g.checks || []).map(c => checkCard(c, g)).join("")}</div></section>
+  <section class="blk" id="sec-hist"><div class="bh"><h3>History</h3><span class="sub">score above, ${esc(bname(g))} below</span><div class="right seg" id="rangeseg">${["1Y", "5Y", "10Y", "Max"].map(r => `<button type="button" aria-pressed="${r === range}" data-range="${r}">${r}</button>`).join("")}</div></div>
+    <div class="card"><div class="chart" id="hist"></div><div class="legend"><span><i class="sw" style="background:var(--z1)"></i>Buy zone (score ≤ 10)</span><span><i class="sw" style="background:var(--z5)"></i>Caution zone (score ≥ 90)</span><span><i class="sw" style="background:var(--z1);opacity:.35"></i>On the price chart: days spent in the buy zone</span><span><i class="ln" style="background:var(--ink-2)"></i>Dashed: your alert thresholds</span></div></div></section>
+  <section class="blk" id="sec-in"><div class="bh"><h3>What is in the score</h3><span class="sub">${g.coverage.of} inputs, each ranked against its own history · select a row for its chart and its own track record</span></div>${indTable(g, "scored")}
     <p class="note">Rank: 0 is the most fearful reading in the input's history up to that day, 100 the calmest. The score averages the ranks within each group, then the groups, and ranks the result the same way. An input's own evidence can be weak while the combination is strong: single inputs are noisy.</p></section>
-  <details class="fold" data-fold="ctx" ${folds.has("ctx") ? "open" : ""}><summary>Tested, not scored <span class="sub">${g.indicators.filter(i => i.role === "context").length} metrics, with the reason each was left out</span></summary><div class="inner">${indTable(g, "context")}</div></details>
-  <details class="fold" data-fold="ep" ${folds.has("ep") ? "open" : ""}><summary>Past signals <span class="sub">${g.episodes.buy.length} buy-zone and ${g.episodes.caution.length} caution-zone episodes</span></summary><div class="inner"><div class="seg" id="epseg" style="margin-bottom:10px"><button type="button" aria-pressed="${epSide === "buy"}" data-ep="buy">Buy zone</button><button type="button" aria-pressed="${epSide === "caution"}" data-ep="caution">Caution zone</button></div>${episodesTable(g)}</div></details>
-  ${g.id === "ai" ? aiContext() : ""}`;
+  <details class="fold" id="sec-ctx" data-fold="ctx" style="margin-top:30px"><summary>Tested, not scored <span class="sub">${g.indicators.filter(i => i.role === "context").length} metrics, with the reason each was left out</span></summary><div class="inner">${indTable(g, "context")}</div></details>
+  <details class="fold" id="sec-ep" data-fold="ep"><summary>Past signals <span class="sub">${g.episodes.buy.length} buy-zone and ${g.episodes.caution.length} caution-zone episodes</span></summary><div class="inner"><div class="seg" id="epseg" style="margin-bottom:10px"><button type="button" aria-pressed="${epSide === "buy"}" data-ep="buy">Buy zone</button><button type="button" aria-pressed="${epSide === "caution"}" data-ep="caution">Caution zone</button></div>${episodesTable(g)}</div></details>
+  ${g.id === "ai" ? aiContext() : ""}</div>`;
 }
 
 function ltDetail(L) {
@@ -336,12 +395,12 @@ function ltDetail(L) {
     return h;
   }).join("");
   const e = L.expected;
-  return `<div class="dhead"><h2>S&amp;P 500 · next 10 years</h2><span class="zone">${sgn(e.mid)} a year · ${esc(L.zone)}</span><a class="x" href="#">Close</a></div>
+  return `<div class="dcard"><div class="dhead"><h2>S&amp;P 500 · next 10 years</h2><span class="zchip">${sgn(e.mid)} a year · ${esc(L.zone)}</span><a class="x pill" href="#">Close</a></div>
   <p class="dsub">What today's valuation has historically meant for the following decade, as a nominal total return (dividends included, before inflation). This layer moves slowly and says nothing about the next year: expensive markets have stayed expensive for a long time. Use it to set expectations and overall exposure, and the tactical gauges for timing.</p>
   <div class="kv"><div class="card"><div class="k">Expected, next 10 years</div><div class="v num">${sgn(e.mid)}</div><div class="s">a year, average of the two models</div></div><div class="card"><div class="k">Model range</div><div class="v num">${sgn(e.low, 1, "")} to ${sgn(e.high)}</div><div class="s">a year</div></div><div class="card"><div class="k">Long-run average</div><div class="v num">${sgn(L.hist_avg)}</div><div class="s">a year, 10-year windows since 1951</div></div><div class="card"><div class="k">10-year Treasury</div><div class="v num">${L.treasury10 != null ? L.treasury10.toFixed(2) + "%" : "—"}</div><div class="s">the alternative, held to maturity</div></div></div>
   <section class="blk"><div class="bh"><h3>The two models</h3><span class="sub">select a row for its history</span></div>
   <div class="card scroll"><table><thead><tr><th>Measure</th><th>Today</th><th>Percentile</th><th>Implied 10-year return</th><th>Fit</th><th>Average miss, out of sample</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <p class="note">Each model is a one-variable regression of the subsequent 10-year return on the measure. Ten-year windows overlap heavily, so there are only about seven independent decades behind these fits and the true uncertainty is wider than "typical miss" suggests. Today's values are moved from the last official figure with the S&amp;P 500's change since.</p></section>`;
+  <p class="note">Each model is a one-variable regression of the subsequent 10-year return on the measure. Ten-year windows overlap heavily, so there are only about seven independent decades behind these fits and the true uncertainty is wider than "typical miss" suggests. Today's values are moved from the last official figure with the S&amp;P 500's change since.</p></section></div>`;
 }
 
 /* ---------------------------------------------------------------- charts */
@@ -349,30 +408,35 @@ function dispose() { charts.forEach(c => c.dispose()); charts = []; }
 function mk(el) { const c = echarts.init(el, null, { renderer: "canvas" }); charts.push(c); return c; }
 const cutoff = () => { if (range === "Max") return null; const d = new Date(D.as_of + "T12:00:00"); d.setFullYear(d.getFullYear() - parseInt(range)); return d.toISOString().slice(0, 10); };
 const base = () => ({ ink: tok("--ink"), ink2: tok("--ink-2"), muted: tok("--muted"), grid: tok("--grid"), surface: tok("--surface"), z1: tok("--z1"), z5: tok("--z5"), s1: tok("--s1"), s2: tok("--s2") });
-const axisCommon = c => ({ axisLine: { lineStyle: { color: c.grid } }, axisTick: { show: false }, axisLabel: { color: c.muted, fontSize: 11 }, splitLine: { lineStyle: { color: c.grid } } });
-const tipCommon = c => ({ backgroundColor: c.surface, borderColor: c.grid, borderWidth: 1, textStyle: { color: c.ink, fontSize: 12 }, extraCssText: "box-shadow:0 6px 20px rgba(0,0,0,.14);border-radius:8px;" });
+const axisCommon = c => ({ axisLine: { lineStyle: { color: c.grid } }, axisTick: { show: false }, axisLabel: { color: c.muted, fontSize: 11, fontFamily: "Inter, system-ui, sans-serif" }, splitLine: { lineStyle: { color: c.grid } } });
+const tipCommon = c => ({ backgroundColor: c.surface, borderColor: c.grid, borderWidth: 1, textStyle: { color: c.ink, fontSize: 12, fontFamily: "Inter, system-ui, sans-serif" }, extraCssText: "box-shadow:0 8px 24px rgba(0,0,0,.18);border-radius:10px;" });
+const fade = (hex, a) => { const n = parseInt(hex.replace("#", ""), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
 
 function histChart(g) {
   const el = $("#hist"); if (!el || !H) return;
-  const h = H[g.id], c = base(), cut = cutoff();
+  const h = H[g.id], c = base(), cut = cutoff(), t = thr(g.id);
   const i0 = cut ? Math.max(0, h.dates.findIndex(d => d >= cut)) : 0;
   const dates = h.dates.slice(i0), sc = dates.map((d, i) => [d, h.score[i0 + i]]), px = dates.map((d, i) => [d, h.price[i0 + i]]);
   const first = dates[0], day = 864e5;
   const areas = g.episodes.buy.filter(e => e.end >= first).map(e => { const s = e.start < first ? first : e.start; const minEnd = new Date(new Date(s).getTime() + (range === "1Y" ? 2 : range === "5Y" ? 8 : 20) * day).toISOString().slice(0, 10); return [{ xAxis: s }, { xAxis: e.end > minEnd ? e.end : minEnd }]; });
   const zoneOf = v => D.zones.find(z => v >= z.lo && (v < z.hi || z.hi === 100)) || D.zones[2];
   const name = g.benchmark.split(" (")[0], log = range === "Max";
+  const line = (y, lab) => ({ yAxis: y, label: { formatter: lab, position: "insideEndTop", color: c.muted, fontSize: 10 } });
   mk(el).setOption({
     animation: false, axisPointer: { link: [{ xAxisIndex: "all" }] },
     tooltip: { trigger: "axis", ...tipCommon(c), axisPointer: { type: "line", lineStyle: { color: c.muted, width: 1 } },
       formatter: ps => { const s = ps.find(p => p.seriesIndex === 0), p = ps.find(p => p.seriesIndex === 1); const v = s && s.value[1]; return `<div style="color:${c.muted};margin-bottom:2px">${fdate((s || p).value[0])}</div>` + (v != null ? `Score <b>${v.toFixed(0)}</b> · ${zoneOf(v).label}<br>` : "") + (p && p.value[1] != null ? `${name} <b>${p.value[1].toLocaleString()}</b>` : ""); } },
-    title: [{ text: "Score", left: 8, top: 6, textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }, { text: name + (log ? " (log scale)" : ""), left: 8, top: "50%", textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }],
-    grid: [{ left: 48, right: 18, top: 30, height: "36%" }, { left: 48, right: 18, top: "57%", bottom: 30 }],
+    title: [{ text: "Score", left: 10, top: 8, textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }, { text: name + (log ? " (log scale)" : ""), left: 10, top: "50%", textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }],
+    grid: [{ left: 50, right: 20, top: 32, height: "35%" }, { left: 50, right: 20, top: "57%", bottom: 30 }],
     xAxis: [{ type: "time", gridIndex: 0, ...axisCommon(c), axisLabel: { show: false }, splitLine: { show: false } }, { type: "time", gridIndex: 1, ...axisCommon(c), splitLine: { show: false } }],
     yAxis: [{ gridIndex: 0, min: 0, max: 100, interval: 25, ...axisCommon(c) }, { gridIndex: 1, type: log ? "log" : "value", scale: true, ...axisCommon(c), axisLabel: { color: c.muted, fontSize: 11, formatter: v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + "k" : v } }],
+    visualMap: { show: false, seriesIndex: 0, dimension: 1, pieces: [{ lte: 10, color: c.z1 }, { gt: 10, lt: 90, color: c.ink }, { gte: 90, color: c.z5 }] },
     series: [
-      { name: "Score", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: sc, showSymbol: false, connectNulls: false, lineStyle: { width: 1.5, color: c.ink }, itemStyle: { color: c.ink },
-        markArea: { silent: true, data: [[{ yAxis: 0, itemStyle: { color: c.z1, opacity: .22 } }, { yAxis: 10 }], [{ yAxis: 90, itemStyle: { color: c.z5, opacity: .22 } }, { yAxis: 100 }]] } },
-      { name, type: "line", xAxisIndex: 1, yAxisIndex: 1, data: px, showSymbol: false, lineStyle: { width: 1.5, color: c.ink }, itemStyle: { color: c.ink },
+      { name: "Score", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: sc, showSymbol: false, lineStyle: { width: 1.6 },
+        markArea: { silent: true, data: [[{ yAxis: 0, itemStyle: { color: c.z1, opacity: .16 } }, { yAxis: 10 }], [{ yAxis: 90, itemStyle: { color: c.z5, opacity: .16 } }, { yAxis: 100 }]] },
+        markLine: { silent: true, symbol: "none", lineStyle: { color: c.ink2, type: "dashed", width: 1, opacity: .7 }, data: [line(t.below, "alert ≤ " + t.below), line(t.above, "alert ≥ " + t.above)] } },
+      { name, type: "line", xAxisIndex: 1, yAxisIndex: 1, data: px, showSymbol: false, lineStyle: { width: 1.6, color: c.ink }, itemStyle: { color: c.ink },
+        areaStyle: log ? undefined : { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: fade(c.s1, .22) }, { offset: 1, color: fade(c.s1, 0) }]) },
         markArea: { silent: true, itemStyle: { color: c.z1, opacity: .3 }, data: areas } }],
   });
 }
@@ -391,11 +455,11 @@ function indChart(g) {
   const h = H[g.id], i = g.indicators.find(x => x.id === openInd), vals = h.ind[openInd]; if (!vals || !i) return;
   const cut = cutoff(), i0 = cut ? Math.max(0, h.dates.findIndex(d => d >= cut)) : 0;
   const data = h.dates.slice(i0).map((d, k) => [d, vals[i0 + k]]);
-  mk(el).setOption({ animation: false, grid: { left: 46, right: 14, top: 26, bottom: 26 },
+  mk(el).setOption({ animation: false, grid: { left: 46, right: 14, top: 28, bottom: 26 },
     title: { text: `${i.name} · ${range === "Max" ? "all history" : "last " + range.toLowerCase().replace("y", " years").replace("1 years", "year")}`, left: 4, top: 2, textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } },
     tooltip: { trigger: "axis", ...tipCommon(c), formatter: ps => ps[0].value[1] == null ? "" : `<div style="color:${c.muted}">${fdate(ps[0].value[0])}</div><b>${fval(i, ps[0].value[1])}</b>` },
     xAxis: { type: "time", ...axisCommon(c), splitLine: { show: false } }, yAxis: { type: "value", scale: true, ...axisCommon(c) },
-    series: [{ type: "line", showSymbol: false, data, lineStyle: { width: 1.5, color: c.ink }, itemStyle: { color: c.ink } }] });
+    series: [{ type: "line", showSymbol: false, connectNulls: true, data, lineStyle: { width: 1.6, color: c.ink }, itemStyle: { color: c.ink }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: fade(c.s1, .18) }, { offset: 1, color: fade(c.s1, 0) }]) } }] });
 }
 
 function gpuChart() {
@@ -421,46 +485,65 @@ async function renderDetail() {
   el.querySelectorAll("#epseg button").forEach(b => b.onclick = () => { epSide = b.dataset.ep; renderDetail(); });
   el.querySelectorAll("th.sortable").forEach(t => t.onclick = () => { const k = t.dataset.sort; if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === "ticker" || k === "layer" || k === "next_report" ? 1 : -1; } folds.add("co"); renderDetail(); });
   el.querySelectorAll("details.fold").forEach(d => { if (folds.has(d.dataset.fold)) d.open = true; d.ontoggle = () => { d.open ? folds.add(d.dataset.fold) : folds.delete(d.dataset.fold); if (d.dataset.fold === "gpu" && d.open) gpuChart(); if (d.open) charts.forEach(c => c.resize()); }; });
+  el.querySelectorAll(".subnav button").forEach(b => b.onclick = () => { const t = document.getElementById(b.dataset.go); if (!t) return; if (t.tagName === "DETAILS") t.open = true; t.scrollIntoView({ behavior: "smooth", block: "start" }); });
   if (!H) { try { H = await (await fetch("../data/signals_history.json?t=" + encodeURIComponent(D.generated_at))).json(); } catch (e) { H = null; } }
   if (view !== "lt") histChart(g);
   indChart(g);
   gpuChart();
-  if (jump && innerWidth <= 860) el.scrollIntoView({ behavior: "smooth", block: "start" });   // stacked tiles push the detail off screen
+  if (jump) el.scrollIntoView({ behavior: "smooth", block: "start" });
   jump = false;
 }
 
 function renderMeta() {
-  $("#asof").innerHTML = `Close of <b>${fdate(D.as_of)}</b>`;
+  $("#asof").innerHTML = `Close of <b>${fdate(D.as_of, { month: "short", day: "numeric" })}</b>`;
   const bad = D.sources.filter(s => !s.ok);
   $("#srcdot").className = "sdot " + (bad.length ? "warning" : "good");
   $("#srclbl").textContent = bad.length ? `${bad.length} source issue${bad.length > 1 ? "s" : ""}` : "All sources current";
-  const nxt = new Date(D.next_refresh_utc);
-  $("#srcpanel").innerHTML = `<ul>${D.sources.map(s => `<li><span class="sdot ${s.ok ? "good" : "warning"}"></span><span class="nm">${esc(s.name)}${s.note ? `<small>${esc(s.note)}</small>` : ""}</span><span class="muted">${s.latest ? fdate(s.latest, { month: "short", day: "numeric" }) : ""}</span></li>`).join("")}</ul><p class="muted" style="margin:10px 0 0">Rebuilt ${new Date(D.generated_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}. Next scheduled run around ${nxt.toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}, after each US session.</p>`;
-  $("#foot").innerHTML = `<p><b>How to read this.</b> Scores rank today's fear against history using only what was known on each day. The tables report what followed similar readings; they are frequencies from the past, not forecasts, and the buy side is far better supported than the sell side. Inputs and zone edges were chosen on this same history, which flatters every number here to some degree. Not investment advice.</p><p>Data: Yahoo Finance, Cboe, FRED (Federal Reserve Z.1), shillerdata.com, SSGA, Finnhub, Nebius. Updated automatically after each US trading day.</p>`;
+  const nxt = new Date(D.next_refresh_utc), T = (D.alerts && D.alerts.thresholds) || {}, gh = D.repo ? `https://github.com/${D.repo}` : null;
+  const alertRows = Object.keys(T).map(id => `<li><span class="nm">${esc(D.gauges[id].name)}</span><span class="muted">at or below ${T[id].below} · at or above ${T[id].above}</span></li>`).join("");
+  $("#srcpanel").innerHTML = `<h4>Updates</h4><p>Rebuilt automatically after every US trading day. Last build ${new Date(D.generated_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}; next around ${nxt.toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. This page checks for new data on its own every 10 minutes.</p>${gh ? `<p><a href="${gh}/actions/workflows/refresh.yml" target="_blank" rel="noopener">Run a rebuild now on GitHub</a> (takes about 4 minutes)</p>` : ""}
+    <h4>Email alerts</h4><ul>${alertRows}</ul>${gh ? `<p style="margin-top:6px"><a href="${gh}/edit/main/config/alerts.yaml" target="_blank" rel="noopener">Change thresholds</a> · <a href="${gh}/issues?q=label%3Agauge-alert" target="_blank" rel="noopener">Alert history</a></p>` : ""}
+    <h4>Sources</h4><ul>${D.sources.map(s => `<li><span class="sdot ${s.ok ? "good" : "warning"}"></span><span class="nm">${esc(s.name)}${s.note ? `<small>${esc(s.note)}</small>` : ""}</span><span class="muted">${s.latest ? fdate(s.latest, { month: "short", day: "numeric" }) : ""}</span></li>`).join("")}</ul>`;
+  $("#foot").innerHTML = `<p><b>How to read this.</b> Scores rank today's fear against history using only what was known on each day. The tables report what followed similar readings; they are frequencies from the past, not forecasts, and the buy side is far better supported than the sell side. Inputs and zone edges were chosen on this same history, which flatters every number here to some degree. Not investment advice.</p><p>Data: Yahoo Finance, Cboe, FRED (Federal Reserve Z.1, ICE BofA), shillerdata.com, AAII, SSGA, Finnhub, Nebius. Updated automatically after each US trading day.</p>`;
 }
 
 function route() {
-  const h = location.hash.replace("#", "");
-  const next = ["spx", "ai", "lt"].includes(h) ? h : null;
-  if (next !== view) { openInd = null; }
+  const h = location.hash.replace("#", ""), next = ["spx", "ai", "lt"].includes(h) ? h : null;
+  if (next !== view) openInd = null;
   view = next;
   if (!D) return;
   renderTiles(); renderDetail();
 }
 
+async function load(manual) {
+  const btn = $("#refresh");
+  btn.classList.add("spin");
+  try {
+    const r = await fetch("../data/signals.json?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json(), changed = !D || d.generated_at !== D.generated_at;
+    lastLoad = Date.now();
+    if (changed) { const had = !!D; D = d; H = null; renderMeta(); if (had) { renderTiles(); renderDetail(); } else route(); }
+    if (manual) toast(changed ? `Updated · close of ${fdate(d.as_of, { month: "short", day: "numeric" })}` : `Already the latest · close of ${fdate(d.as_of, { month: "short", day: "numeric" })}`);
+  } catch (e) {
+    if (manual) toast("Could not reach the server. Try again in a moment.");
+    else if (!D) $("#tiles").innerHTML = `<div class="empty">Could not load data/signals.json (${esc(e.message)}).</div>`;
+  } finally { setTimeout(() => btn.classList.remove("spin"), 400); }
+}
+
+$("#refresh").onclick = () => load(true);
 $("#theme").onclick = () => {
-  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const nxt = cur === "dark" ? "light" : "dark";
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), nxt = cur === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = nxt;
   try { localStorage.setItem("mg-theme", nxt); } catch (e) { /* storage blocked */ }
   if (D) renderDetail();
 };
 document.addEventListener("click", e => { const p = $("#srcpop"); if (p.open && !p.contains(e.target)) p.open = false; });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - lastLoad > 5 * 60 * 1000) load(false); });
+setInterval(() => { if (!document.hidden) load(false); }, 10 * 60 * 1000);
 addEventListener("hashchange", route);
 addEventListener("resize", () => charts.forEach(c => c.resize()));
-fetch("../data/signals.json?t=" + Date.now()).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d => { D = d; renderMeta(); route(); })
-  .catch(e => { $("#tiles").innerHTML = `<div class="empty">Could not load data/signals.json (${esc(e.message)}).</div>`; });
+load(false);
 </script>
 </body>
 </html>

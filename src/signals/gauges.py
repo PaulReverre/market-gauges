@@ -29,6 +29,7 @@ class Ind:
     source: str = ""
     series: pd.Series | None = field(default=None, repr=False)
     last: pd.Timestamp | None = None   # date of the newest real observation behind `series`
+    gap: int = 5                       # calendar days between updates before the reading counts as stale
 
 
 AI_BASKET = {
@@ -70,8 +71,25 @@ def _breadth(members: pd.DataFrame, cal: pd.DatetimeIndex, min_names: int) -> di
     return {"above50": above, "oversold": oversold}
 
 
+def fund_flow_pct(flows: pd.DataFrame, z1: pd.DataFrame) -> pd.Series | None:
+    """Net equity purchases by mutual funds and ETFs (Fed Z.1, annual rate), 4-quarter average, as a
+    percent of the value of all US equities. Dated when it became public: about 6 months after the
+    quarter's first day."""
+    need = ["BOGZ1FA653064100Q", "BOGZ1FA563064100Q"]
+    if flows is None or z1 is None or any(c not in flows for c in need) or "NCBEILQ027S" not in z1:
+        return None
+    buy = flows[need[0]].fillna(0) + flows[need[1]].fillna(0)
+    value = z1["NCBEILQ027S"] + z1["FBCELLQ027S"]
+    out = (buy.rolling(4).mean() / value * 100).dropna()
+    out.index = out.index + pd.DateOffset(months=6)
+    return out
+
+
 def spx_indicators(px: pd.DataFrame, cboe: pd.DataFrame, pc: pd.DataFrame, members: pd.DataFrame,
-                   baa: pd.Series | None) -> tuple[list[Ind], pd.Series]:
+                   baa: pd.Series | None, extra: dict | None = None) -> tuple[list[Ind], pd.Series]:
+    """`extra` carries the slower context series: aaii (weekly frame), alloc (monthly frame),
+    hy (daily series), flows (quarterly series from fund_flow_pct)."""
+    extra = extra or {}
     spx = px["^GSPC"].dropna()
     cal = spx.index
     col = lambda df, c: df[c] if df is not None and c in df else None  # noqa: E731
@@ -118,44 +136,84 @@ def spx_indicators(px: pd.DataFrame, cboe: pd.DataFrame, pc: pd.DataFrame, membe
             why="Spikes when everything is sold at once and collapses when investors are picking stocks without "
                 "fear. Few episodes since 2006, so its own evidence is modest.", series=cor, last=d_cor),
         # ---- context: tested, shown with their own evidence, kept out of the score
-        Ind("vix_ivr", "VIX IV rank (1y)", "%", "high", "context", nd=0, source="Cboe, via Yahoo",
+        Ind("vix_ivr", "VIX IV rank (1y)", "%", "high", "context", nd=0, pillar="Volatility", source="Cboe, via Yahoo",
             what="Where today's VIX sits between its 1-year low and 1-year high.",
             why="Same idea as IV percentile, but set by two extreme days, so one spike distorts it for a year. "
                 "IV percentile is used instead.", series=M.iv_rank(vix), last=d_vix),
-        Ind("above50", "S&P 500 stocks above their 50-day average", "%", "low", "context", nd=0,
+        Ind("above50", "S&P 500 stocks above their 50-day average", "%", "low", "context", nd=0, pillar="Breadth",
             source="Yahoo, current SPY members",
             what="Share of today's index members trading above their own 50-day average.",
             why="Breadth washouts pass the test on their own, mostly as a 1-month bounce signal. Left out because "
                 "adding breadth made the score worse at 3 to 12 months; use it as confirmation. Built from today's "
                 "members, so the past looks slightly healthier than it was.", series=br.get("above50"), last=d_mem),
-        Ind("oversold", "S&P 500 stocks with RSI below 30", "%", "high", "context", nd=0,
+        Ind("oversold", "S&P 500 stocks with RSI below 30", "%", "high", "context", nd=0, pillar="Breadth",
             source="Yahoo, current SPY members",
             what="Share of index members that are oversold on 14-day RSI.",
             why="Passes on its own but fires constantly (80+ episodes) for a small edge. Confirmation, not a signal.",
             series=br.get("oversold"), last=d_mem),
-        Ind("dd", "S&P 500 below its 52-week high", "%", "high", "context", source="Yahoo",
+        Ind("dd", "S&P 500 below its 52-week high", "%", "high", "context", pillar="Price", source="Yahoo",
             what="How far the index is below its highest close of the past year.",
             why="Rejected. Deep drawdowns were followed by worse-than-average returns before 2010 (2000-02, 2008) "
                 "and better ones since: price being down is not, by itself, a buy signal.",
             series=-(spx / spx.rolling(252).max() - 1) * 100, last=spx.index[-1]),
-        Ind("ma200", "S&P 500 vs its 200-day average", "%", "low", "context", source="Yahoo",
+        Ind("ma200", "S&P 500 vs its 200-day average", "%", "low", "context", pillar="Price", source="Yahoo",
             what="Distance of the index from its 200-day average.",
             why="Rejected as a contrarian input for the same reason as drawdown. Useful only as trend context.",
             series=(spx / spx.rolling(200).mean() - 1) * 100, last=spx.index[-1]),
-        Ind("vvix", "VVIX", "", "high", "context", source="Cboe VVIX",
+        Ind("vvix", "VVIX", "", "high", "context", pillar="Volatility", source="Cboe VVIX",
             what="Implied volatility of VIX options (the volatility of volatility).",
             why="Left out: it rises with VIX and its history only starts in 2006, so it could not be checked across "
                 "both halves of the sample.", series=vvix, last=d_vvix),
-        Ind("skew", "Cboe SKEW", "", "low", "context", source="Cboe SKEW",
+        Ind("skew", "Cboe SKEW", "", "low", "context", pillar="Volatility", source="Cboe SKEW",
             what="Price of far out-of-the-money S&P 500 puts relative to at-the-money options.",
             why="Left out. High SKEW is popularly read as a crash warning, but high readings had no relation to "
                 "forward returns. Low readings did precede better returns, yet the index has drifted upward for "
                 "15 years, so its rank against its own history is not comparable over time.", series=skew, last=d_skew),
-        Ind("baa", "Baa corporate bond spread", "pts", "high", "context", nd=2, source="FRED BAA10Y",
+        Ind("baa", "Baa corporate bond spread", "pts", "high", "context", nd=2, pillar="Credit", source="FRED BAA10Y",
             what="Moody's Baa corporate yield minus the 10-year Treasury yield.",
             why="Rejected. Wide credit spreads flagged the 2001 and 2008 recessions, when buying early lost money. "
                 "A stress thermometer, not a buy signal.", series=baa_s, last=d_baa),
     ]
+    # ---- slower context: surveys, flows, high-yield spread (tested 2026-11-10; none improved the score)
+    aaii, alloc, hy, flows = (extra.get(k) for k in ("aaii", "alloc", "hy", "flows"))
+    if aaii is not None and not aaii.empty:
+        spread4, d_aaii = _al((aaii["bull"] - aaii["bear"]).rolling(4).mean(), cal, 10)
+        I.append(Ind("aaii", "AAII bulls minus bears, 4-week", "pts", "low", "context", pillar="Surveys & flows",
+                     source="AAII Sentiment Survey", gap=12,
+                     what="Share of individual investors who are bullish minus the share who are bearish in AAII's "
+                          "weekly survey, averaged over four weeks.",
+                     why="Has a modest edge on its own (deep pessimism was followed by slightly better returns in "
+                         "both halves of the sample), but adding it to the score cut the buy zone's 3-month edge "
+                         "from 3.0 to 1.8 points. Survey mood is noisier than what investors pay for options.",
+                     series=spread4, last=d_aaii))
+    if alloc is not None and not alloc.empty:
+        avail = alloc["cash"].copy()
+        avail.index = avail.index + pd.offsets.BDay(3)          # month-end survey, published early the next month
+        cash, d_cash = _al(avail, cal, 45)
+        I.append(Ind("aaii_cash", "AAII cash allocation", "%", "high", "context", pillar="Surveys & flows",
+                     source="AAII Asset Allocation Survey", gap=50,
+                     what="Share of individual investors' portfolios held in cash, from AAII's monthly survey. The "
+                          "free stand-in for BofA's fund-manager cash level, which is not published as data.",
+                     why="No edge found: neither high nor low cash levels were followed by returns different from "
+                         "average at 1 to 3 months. It moves over years, not weeks.", series=cash, last=d_cash))
+    if flows is not None and not flows.dropna().empty:
+        fl, d_fl = _al(flows, cal, 120)
+        I.append(Ind("flows", "Equity fund flows, 4 quarters", "%", "low", "context", nd=2, pillar="Surveys & flows",
+                     source="FRED (Fed Z.1 accounts)", gap=200,
+                     what="Net buying of stocks by mutual funds and ETFs over the past four quarters, as a percent "
+                          "of the value of all US equities. Negative means investors were pulling money out.",
+                     why="Heavy outflows were followed by better returns on their own, but the data is quarterly and arrives about "
+                         "10 weeks late, so it confirms a low months afterwards rather than flagging it; adding it "
+                         "weakened the score. Weekly flow data (ICI, EPFR) is not freely available to a script.",
+                     series=fl, last=d_fl))
+    if hy is not None and not hy.dropna().empty:
+        hy_s, d_hy = _al(hy, cal)
+        I.append(Ind("hy_oas", "High-yield credit spread", "pts", "high", "context", nd=2, pillar="Credit",
+                     source="FRED BAMLH0A0HYM2 (ICE BofA)",
+                     what="Extra yield junk bonds pay over Treasuries (ICE BofA option-adjusted spread).",
+                     why="FRED now serves only three years of this series, too little to test. Its long-history "
+                         "cousin, the Baa spread below, fails as a buy signal. Credit earns its place as a check on "
+                         "the buy zone instead: see the credit check above.", series=hy_s, last=d_hy))
     return [i for i in I if i.series is not None and not i.series.dropna().empty], spx
 
 
@@ -199,33 +257,33 @@ def ai_indicators(px: pd.DataFrame, basket: pd.DataFrame) -> tuple[list[Ind], pd
             why="Marks market-wide panic. History starts in 2006, so 2008 weighs heavily: early that autumn, and it "
                 "has rarely missed since.", series=vix / vix3m, last=_oldest(d_vix, d_v3)),
         # ---- context
-        Ind("vxn_vrp", "VXN minus Nasdaq realized volatility", "pts", "high", "context",
+        Ind("vxn_vrp", "VXN minus Nasdaq realized volatility", "pts", "high", "context", pillar="Volatility",
             source="Cboe and Nasdaq-100, via Yahoo",
             what="Implied minus actual 20-day Nasdaq-100 volatility: the premium paid for protection.",
             why="Passes on its own at 1 to 6 months. Left out because adding it weakened the score at 6 and 12 "
                 "months. A useful short-term confirmation.",
             series=vxn - M.realized_vol(ndx), last=_oldest(d_vxn, d_ndx)),
-        Ind("sox_dd", "Semis below their 52-week high", "%", "high", "context", source="PHLX SOX, via Yahoo",
+        Ind("sox_dd", "Semis below their 52-week high", "%", "high", "context", pillar="Price", source="PHLX SOX, via Yahoo",
             what="How far the semiconductor index is below its highest close of the past year.",
             why="Rejected. It looks like a great buy signal since 2010, but once 2000-02 (an 80% fall) is in the "
                 "sample the edge is not statistically distinguishable from chance.",
             series=-(sox / sox.rolling(252).max() - 1) * 100, last=d_sox),
-        Ind("sox_ma200", "Semis vs their 200-day average", "%", "low", "context", source="PHLX SOX, via Yahoo",
+        Ind("sox_ma200", "Semis vs their 200-day average", "%", "low", "context", pillar="Price", source="PHLX SOX, via Yahoo",
             what="Distance of the semiconductor index from its 200-day average.",
             why="Rejected for the same reason as drawdown. Trend context only.",
             series=(sox / sox.rolling(200).mean() - 1) * 100, last=d_sox),
-        Ind("rs63", "Semis vs S&P 500, 3-month", "%", "low", "context", source="Yahoo",
+        Ind("rs63", "Semis vs S&P 500, 3-month", "%", "low", "context", pillar="Price", source="Yahoo",
             what="Semiconductor index return minus S&P 500 return over the past 63 sessions.",
             why="Rejected. Relative weakness did not reliably predict a rebound, and relative strength was followed "
                 "by more strength, not a fall.", series=(rs / rs.shift(63) - 1) * 100, last=d_sox),
-        Ind("bk50", "AI basket above 50-day average", "%", "low", "context", nd=0, source="Yahoo, 25-name AI basket",
+        Ind("bk50", "AI basket above 50-day average", "%", "low", "context", nd=0, pillar="Breadth", source="Yahoo, 25-name AI basket",
             what="Share of 25 AI names (chips, memory, hyperscalers, neoclouds, power) above their 50-day average.",
             why="Rejected as a signal: no reliable relation to forward returns, and the basket is today's winners "
                 "applied backwards. Shown because it describes the damage.",
             series=bk50, last=b.dropna(how="all").index[-1] if not b.dropna(how="all").empty else None),
     ]
     if "NVDA" in b:
-        I.append(Ind("nvda_rv", "NVDA realized volatility (20d)", "%", "high", "context", nd=0, source="Yahoo",
+        I.append(Ind("nvda_rv", "NVDA realized volatility (20d)", "%", "high", "context", nd=0, pillar="Volatility", source="Yahoo",
                      what="Nvidia's actual 20-day volatility, annualized.",
                      why="Left out: one stock is too narrow to score, and it showed no edge of its own.",
                      series=M.realized_vol(b["NVDA"]), last=d_sox))
@@ -274,7 +332,7 @@ def build_gauge(gid: str, name: str, benchmark: str, inds: list[Ind], px: pd.Ser
             "id": i.id, "name": i.name, "unit": i.unit, "nd": i.nd, "fear": i.fear, "role": i.role,
             "pillar": i.pillar, "what": i.what, "why": i.why, "source": i.source,
             "value": round(float(v.iloc[-1]), i.nd + 1), "as_of": (i.last or v.index[-1]).date().isoformat(),
-            "stale": bool((last - (i.last or v.index[-1])).days > 5),
+            "stale": bool((last - (i.last or v.index[-1])).days > i.gap),
             "score": round(float(level.iloc[-1]), 1) if len(level) else None,
             "since": v.index[0].date().isoformat(),
             "chg_1w": round(float(v.iloc[-1] - v.iloc[-6]), i.nd + 1) if len(v) > 6 else None,
@@ -282,6 +340,20 @@ def build_gauge(gid: str, name: str, benchmark: str, inds: list[Ind], px: pd.Ser
                 "fear": {**e["low"], "grade": M.grade(e["low"], "above")},
                 "calm": {**e["high"], "grade": M.grade(e["high"], "below")}},
         })
+    checks = []
+    baa = next((i for i in inds if i.id == "baa"), None)
+    if baa is not None:
+        # Credit check: was the Baa spread widening unusually fast (top 10% of its 3-month changes to date)?
+        widening = M.expanding_pct(baa.series.reindex(cal).diff(63))
+        w = widening.dropna()
+        if len(w) > 1500:
+            rows_c = M.split_odds(score, px, widening >= 0.9)
+            checks.append({"id": "credit", "name": "Credit check",
+                           "now": round(float(w.iloc[-1]) * 100), "flag": bool(w.iloc[-1] >= 0.9),
+                           "yes": "Credit spreads blowing out", "no": "Credit spreads not blowing out",
+                           "rows": rows_c,
+                           "note": "Blowing out = the Baa corporate spread's 3-month widening is in the top 10% of "
+                                   "its history to date."})
     gauge = {
         "id": gid, "name": name, "benchmark": benchmark, "as_of": last.date().isoformat(),
         "score": round(now, 1), "zone": zone, "zone_days": run,
@@ -297,6 +369,7 @@ def build_gauge(gid: str, name: str, benchmark: str, inds: list[Ind], px: pd.Ser
                      "calm": {**ev["high"], "grade": M.grade(ev["high"], "below")}},
         "pillars": [{"name": k, "score": round(float(comp[f"pillar_{k}"].dropna().iloc[-1]), 1), "ids": v}
                     for k, v in pillars.items() if not comp[f"pillar_{k}"].dropna().empty],
+        "checks": checks,
         "indicators": rows,
         "episodes": {"buy": M.episodes(score, px, 10, True)[::-1], "caution": M.episodes(score, px, 90, False)[::-1]},
         "spark": [round(float(v), 1) for v in score.iloc[-126:].values],

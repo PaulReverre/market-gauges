@@ -1,6 +1,7 @@
 """Data access. Free sources only; no API key is required for the scores.
 
 Yahoo (yfinance)  index, ETF and member prices, VIX family history
+AAII              weekly sentiment and monthly asset-allocation surveys (context only)
 Cboe              COR1M history CSV, daily put/call ratios
 FRED (keyless)    Fed Z.1 series for the equity-allocation model
 shillerdata.com   CAPE
@@ -34,6 +35,8 @@ FRED_API = "https://api.stlouisfed.org/fred/series/observations"
 SHILLER_PAGE = "https://shillerdata.com/"
 SSGA_SPY = ("https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/"
             "holdings-daily-us-en-spy.xlsx")
+AAII_SENTIMENT = "https://www.aaii.com/files/surveys/sentiment.xls"
+AAII_ALLOCATION = "https://www.aaii.com/files/surveys/asset.xls"
 NEBIUS = "https://api.nebius.cloud/billing/v1alpha1/spot-price/list-series"
 NEBIUS_START = date(2026, 10, 8)   # prices were fixed, not market-driven, before this
 FINNHUB = "https://finnhub.io/api/v1/"
@@ -227,6 +230,35 @@ def shiller() -> pd.DataFrame:
     out = pd.DataFrame.from_dict(rows, orient="index").sort_index()
     out.index.name = "date"
     return out
+
+
+# ------------------------------------------------------------------- AAII
+def _aaii_xls(url: str, names: list[str]) -> pd.DataFrame:
+    """AAII publishes each survey's full history as one .xls: a date column, then shares that sum to 1."""
+    import xlrd
+
+    wb = xlrd.open_workbook(file_contents=_get(url).content)
+    sh = wb.sheet_by_index(0)
+    n, rows = len(names) + 1, {}
+    for i in range(sh.nrows):
+        v = sh.row_values(i)
+        if isinstance(v[0], float) and v[0] > 20000 and all(isinstance(x, float) for x in v[1:n]):
+            rows[pd.Timestamp(xlrd.xldate_as_datetime(v[0], wb.datemode).date())] = [x * 100 for x in v[1:n]]
+    out = pd.DataFrame.from_dict(rows, orient="index", columns=names).sort_index().round(2)
+    out.index.name = "date"
+    if len(out) < 300:
+        raise RuntimeError(f"AAII file parsed to only {len(out)} rows")
+    return out
+
+
+def aaii_sentiment() -> pd.DataFrame:
+    """Weekly bullish / neutral / bearish shares (percent) since 1987, stamped with the Thursday they were reported."""
+    return _aaii_xls(AAII_SENTIMENT, ["bull", "neutral", "bear"])
+
+
+def aaii_allocation() -> pd.DataFrame:
+    """Monthly asset allocation survey (percent) since 1987, stamped at month end."""
+    return _aaii_xls(AAII_ALLOCATION, ["stock_funds", "stocks", "bond_funds", "bonds", "cash"])
 
 
 # ------------------------------------------------------------------- SSGA
