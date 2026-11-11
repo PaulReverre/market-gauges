@@ -1,6 +1,6 @@
 ---
 name: market-gauges
-description: Refresh and explain the contrarian market gauges (S&P 500, AI & semiconductors, 10-year outlook). Use when asked for the gauge read, fear/complacency, buy or caution zones, or what an input says.
+description: Refresh and explain the contrarian market gauges (S&P 500, AI & semiconductors, Fundamentals). Use when asked for the gauge read, fear/complacency, buy or caution zones, or what an input says.
 ---
 
 # Market gauges
@@ -27,8 +27,9 @@ Ground rules:
 
 1. `git pull --ff-only`, then `make signals` (about 3 minutes; run in the background).
 2. Read `data/signals.json` and report: each gauge's score, zone and 1-week
-   change; the 3-month odds for the current zone against any day; the 10-year
-   outlook; any entry in `sources` with `ok: false`.
+   change; the 3-month odds for the current zone against any day; the
+   fundamentals score, zone and expected 10-year return (`fundamentals`); any
+   entry in `sources` with `ok: false`.
 
 ## explain
 

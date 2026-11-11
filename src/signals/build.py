@@ -22,7 +22,7 @@ from signals import alerts as A
 from signals import companies as C
 from signals import fetch as F
 from signals import gauges as G
-from signals import longterm as L
+from signals import fundamentals as FU
 from signals import model as M
 
 DATA = F.ROOT / "data"
@@ -57,7 +57,7 @@ def is_current(session) -> bool:
         d = json.loads(path.read_text())
         scored = [i for g in d["gauges"].values() for i in g["indicators"] if i["role"] == "scored"]
         return (d["as_of"] == session.isoformat() and all(s["ok"] for s in d["sources"])
-                and all(i["as_of"] == d["as_of"] for i in scored) and d.get("longterm") is not None)
+                and all(i["as_of"] == d["as_of"] for i in scored) and d.get("fundamentals") is not None)
     except Exception:  # noqa: BLE001 - an unreadable file is simply rebuilt
         return False
 
@@ -126,7 +126,8 @@ def main() -> None:
     pc = F.putcall(session, log)
     baa = soft("fred_baa10y", lambda: F.fred("BAA10Y"), "FRED BAA10Y")
     dgs10 = soft("fred_dgs10", lambda: F.fred("DGS10"), "FRED DGS10")
-    z1 = soft("fred_z1", lambda: F.fred_many(L.Z1), "FRED Z.1 accounts")
+    z1 = soft("fred_z1", lambda: F.fred_many(FU.Z1), "FRED Z.1 accounts")
+    corp = soft("fred_corporate", lambda: F.fred_many(FU.FRED), "FRED corporate accounts")
     sh = soft("shiller", F.shiller, "Shiller CAPE")
     neb = F.nebius(log)
     # AAII's site sits behind a bot filter that sometimes answers a script with a web page instead of
@@ -147,13 +148,13 @@ def main() -> None:
     print(f"S&P {g_spx['score']} {g_spx['zone']['label']} · AI {g_ai['score']} {g_ai['zone']['label']}", flush=True)
 
     # ---- long-term layer
-    longterm = None
-    if not z1.empty and not sh.empty:
+    fund, fund_charts = None, {}
+    if not z1.empty and not sh.empty and not corp.empty:
         try:
-            longterm = L.build(sh, z1, spx, dgs10["DGS10"] if "DGS10" in dgs10 else None)
-            print(f"10y outlook {longterm['expected']}", flush=True)
+            fund, fund_charts = FU.build(sh, z1, corp, spx, dgs10["DGS10"] if "DGS10" in dgs10 else None)
+            print(f"fundamentals {fund['score']} {fund['zone']['label']} · 10y outlook {fund['expected']}", flush=True)
         except Exception as e:  # noqa: BLE001
-            log.add("Long-term model", False, note=f"{type(e).__name__}: {e}"[:200])
+            log.add("Fundamentals model", False, note=f"{type(e).__name__}: {e}"[:200])
 
     # ---- AI context
     if args.no_companies:
@@ -170,13 +171,12 @@ def main() -> None:
         "next_refresh_utc": next_refresh(now).isoformat(timespec="seconds"),
         "horizons": list(M.HORIZONS.values()),
         "zones": [{"key": k, "label": lab, "lo": lo, "hi": min(hi, 100)} for k, lab, lo, hi in M.ZONES],
-        "gauges": {"spx": g_spx, "ai": g_ai}, "longterm": longterm, "ai_context": ai_context,
+        "gauges": {"spx": g_spx, "ai": g_ai}, "fundamentals": fund, "ai_context": ai_context,
         "alerts": A.evaluate({"spx": g_spx, "ai": g_ai}, A.load_config()),
         "repo": os.environ.get("GITHUB_REPOSITORY") or _repo_slug(),
         "sources": log.rows,
     }
-    charts = longterm.pop("charts") if longterm else {}
-    history = {"as_of": as_of.isoformat(), "spx": h_spx, "ai": h_ai, "longterm": charts}
+    history = {"as_of": as_of.isoformat(), "spx": h_spx, "ai": h_ai, "fundamentals": fund_charts}
     DATA.mkdir(exist_ok=True)
     (DATA / "signals.json").write_text(json.dumps(M.clean(out), separators=(",", ":")))
     (DATA / "signals_history.json").write_text(json.dumps(M.clean(history), separators=(",", ":")))

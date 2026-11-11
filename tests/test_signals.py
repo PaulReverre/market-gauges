@@ -9,6 +9,8 @@ from signals import companies as C
 from signals import fetch as F
 from signals import model as M
 
+pytestmark = pytest.mark.filterwarnings("ignore")      # synthetic series trip numpy fit warnings
+
 
 def _cal(n=3000):
     return pd.bdate_range("2000-01-03", periods=n)
@@ -183,3 +185,89 @@ def test_alert_config_rejects_inverted_thresholds(tmp_path):
         A.load_config(p)
     p.write_text("ai: {below: 20}\n")
     assert A.load_config(p)["ai"] == {"below": 20.0, "above": 90.0} and A.load_config(p)["spx"] == {"below": 10.0, "above": 90.0}
+
+
+# ------------------------------------------------------------ fundamentals
+from signals import fundamentals as FU
+
+
+def _monthly(n=900, seed=0):
+    idx = pd.date_range("1951-01-01", periods=n, freq="MS")
+    return idx, np.random.default_rng(seed)
+
+
+def test_fundamentals_forward_returns_are_annualized():
+    idx = pd.date_range("2000-01-01", periods=200, freq="MS")
+    tr = pd.Series(1.01 ** np.arange(200), index=idx)                 # 1% a month
+    Y = FU.forward_returns(tr)
+    assert abs(Y["1y"].iloc[0] - (1.01 ** 12 - 1) * 100) < 1e-6 and abs(Y["10y"].iloc[0] - Y["1y"].iloc[0]) < 1e-6
+    assert Y["10y"].iloc[-119:].isna().all()                          # no outcome yet for the last decade
+
+
+def test_out_of_sample_fit_never_sees_unfinished_windows():
+    idx, rng = _monthly()
+    x = pd.Series(rng.normal(size=len(idx)), index=idx).rolling(24).mean()
+    y = -5 * x + 10 + rng.normal(0, .5, len(idx))
+    y.iloc[-120:] = np.nan                                            # like a 10-year forward return
+    fc = FU.out_of_sample(x, y)
+    y2 = y.copy(); y2.loc["2000":] = 999                              # corrupt outcomes that finish after 2010
+    fc2 = FU.out_of_sample(x, y2)
+    cut = fc.loc[:"2009-12"].index
+    pd.testing.assert_series_equal(fc.loc[cut], fc2.loc[cut])         # forecasts up to 2009 use windows that ended by then
+    rec = FU.record(fc, y)
+    assert rec["corr"] > 0.7 and rec["mae"] < rec["mae_naive"]
+
+
+def test_fundamentals_grade_needs_both_halves_and_a_better_record():
+    good = {"corr": 0.8, "mae": 2.6, "mae_naive": 4.9}
+    assert FU.grade(0.7, 0.8, 0.6, good) == "strong"
+    assert FU.grade(0.5, 0.8, 0.8, {"corr": 0.7, "mae": 4.3, "mae_naive": 4.9}) == "moderate"
+    assert FU.grade(0.35, 0.8, 0.3, {"corr": 0.7, "mae": 5.5, "mae_naive": 4.9}) == "weak"     # ranks well, misses by more
+    assert FU.grade(0.5, 0.8, -0.2, good) == "weak"                                             # sign flips after the split
+    assert FU.grade(-0.01, 0.0, -0.02, {"corr": -0.7, "mae": 6.2, "mae_naive": 4.9}) == "none"
+    assert FU.grade(0.04, 0.01, 0.11, {"corr": -0.6, "mae": 6.2, "mae_naive": 4.7}) == "none"
+
+
+def _fund_inputs():
+    """Synthetic world: one valuation ratio drives everything, so every 'high = expensive' measure should work."""
+    idx, rng = _monthly(n=909)                                        # 1951-01 .. 2026-09
+    v = np.cumsum(rng.normal(0, .03, len(idx)))
+    v = v - np.linspace(v[0], v[-1], len(idx))                        # mean-reverting log valuation
+    earn = 10 * 1.005 ** np.arange(len(idx))
+    price = earn * 15 * np.exp(v)
+    sh = pd.DataFrame({"price": price, "dividend": price * .03 / np.exp(v), "earnings": earn, "cpi": 100 * 1.002 ** np.arange(len(idx)),
+                       "cape": 15 * np.exp(v)}, index=idx)
+    q = idx[::3]
+    lvl = pd.Series(price, index=idx).reindex(q)
+    z1 = pd.DataFrame({"NCBEILQ027S": lvl * 1000, "FBCELLQ027S": lvl * 300, **{c: 1.5e6 * 1.01 ** np.arange(len(q)) for c in FU.DEBT}}, index=q)
+    g = 2000 * 1.012 ** np.arange(len(q))
+    fr = pd.DataFrame({"A455RC1Q027SBEA": g * .5, "TNWMVBSNNCB": g * 800, "NCBCEBQ027S": -lvl.values * 10, "BOGZ1FA106121075Q": lvl.values * 20,
+                       "NFCPATAX": g * .05, "CP": g * .08, "GDP": g}, index=q)
+    fr = pd.concat([fr, pd.Series(5.0, index=idx, name="GS10")], axis=1, sort=True)
+    spx = pd.Series(price, index=idx).resample("B").ffill()
+    return sh, z1, fr, spx
+
+
+def test_fundamentals_build_scores_expensive_markets_high():
+    sh, z1, fr, spx = _fund_inputs()
+    out, charts = FU.build(sh, z1, fr, spx, None)
+    assert 0 <= out["score"] <= 100 and out["zone"]["label"] in FU.ZONE_LABEL.values()
+    assert out["expected"]["models"] == 5 and out["expected"]["low"] <= out["expected"]["mid"] <= out["expected"]["high"]
+    by = {r["id"]: r for r in out["inputs"]}
+    assert [r["id"] for r in out["inputs"] if r["role"] == "scored"] == ["alloc", "tobin_q", "ecy", "cape", "payout"]
+    assert by["cape"]["r2"]["10y"] > 0.3 and by["cape"]["grade"] in ("strong", "moderate")   # valuation mean-reverts by construction
+    assert sum(z["months"] for z in out["odds"]["zones"]) == out["odds"]["months"]
+    cheap, dear = out["odds"]["zones"][0]["h"]["10y"], out["odds"]["zones"][-1]["h"]["10y"]
+    if cheap and dear:
+        assert cheap["median"] > dear["median"]
+    assert set(charts["_gauge"]) == {"dates", "score", "estimate", "fitted", "realized"} and "cape" in charts
+
+
+def test_fundamentals_percentile_orientation():
+    sh, z1, fr, spx = _fund_inputs()
+    sh.loc[sh.index[-6:], ["price", "cape"]] *= 3                     # a sudden bubble
+    spx = pd.Series(sh["price"].values, index=sh.index).resample("B").ffill()
+    out, _ = FU.build(sh, z1, fr, spx, None)
+    by = {r["id"]: r for r in out["inputs"]}
+    assert by["cape"]["pct"] > 95 and by["ecy"]["pct"] > 90 and by["dy"]["pct"] > 95   # high P/E, low yields: all read "expensive"
+    assert out["score"] > 85 and out["zone"]["key"] in ("calm", "caution")

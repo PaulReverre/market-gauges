@@ -123,14 +123,6 @@ main { padding: 28px 0 64px; }
 .tfoot { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: auto; padding-top: 14px; font-size: 12px; color: var(--muted); }
 .tfoot .d span { margin-right: 10px; white-space: nowrap; } .tfoot .d b { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .spark { width: 104px; height: 30px; flex: none; } .spark svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.ltbox { margin: 26px 2px 4px; }
-.ltbar { position: relative; height: 66px; }
-.ltbar .track { position: absolute; left: 0; right: 0; top: 30px; height: 8px; border-radius: 4px; background: var(--wash); border: 1px solid var(--ring); }
-.ltbar .band { position: absolute; top: 30px; height: 8px; border-radius: 4px; background: var(--ink-2); opacity: .55; }
-.ltbar .dot { position: absolute; top: 25px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); transform: translateX(-50%); box-shadow: 0 0 0 1px var(--ring); }
-.ltbar .tick { position: absolute; top: 22px; width: 2px; height: 24px; background: var(--muted); border-radius: 1px; transform: translateX(-50%); }
-.ltbar .tick span { position: absolute; bottom: 27px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--ink-2); white-space: nowrap; }
-.ltbar .tick.down span { bottom: auto; top: 27px; }
 .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
 .ltnote { font-size: 13px; color: var(--ink-2); margin-top: 14px; } .ltnote b { color: var(--ink); font-weight: 600; }
 
@@ -166,6 +158,7 @@ th.sortable { cursor: pointer; } th.sortable:hover { color: var(--ink); }
 .zl { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; } .zl small { display: inline; font-weight: 400; margin-left: 2px; }
 .hb { display: block; height: 3px; border-radius: 2px; background: var(--grid); margin: 5px 0 0 auto; width: 64px; position: relative; } .hb b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--ink-2); }
 .ev { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.ev > *, .expg > *, .kv > * { min-width: 0; }
 .evc { padding: 14px 16px; font-size: 13px; color: var(--ink-2); } .evc.wide { grid-column: 1 / -1; }
 .evc h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .dots { letter-spacing: 1px; font-size: 11px; color: var(--ink); } .dots i { font-style: normal; color: var(--base); }
@@ -192,6 +185,7 @@ details.fold > summary::before { content: "›"; display: inline-block; width: 1
 details.fold[open] > summary::before { transform: rotate(90deg); }
 details.fold > summary .sub { font-weight: 400; color: var(--muted); font-size: 12.5px; }
 details.fold > .inner { padding: 0 16px 16px; } details.fold .card { background: var(--surface); }
+.cat.untested { grid-template-columns: minmax(0, 230px) minmax(0, 1fr); gap: 10px 16px; } .cat > * { min-width: 0; overflow-wrap: anywhere; }
 .cat { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 5px 12px; font-size: 13px; padding: 14px 16px; } .cat .d { color: var(--muted); }
 .kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .kv > div { padding: 14px 16px; } .kv .k { font-size: 12px; color: var(--muted); } .kv .v { font-size: 24px; font-weight: 700; letter-spacing: -.025em; } .kv .s { font-size: 12px; color: var(--ink-2); }
@@ -202,7 +196,7 @@ footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--ring);
 @media (max-width: 900px) {
   .tiles { grid-template-columns: 1fr; } .ev, .expg { grid-template-columns: 1fr; } .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chart { height: 380px; } .dcard { padding: 18px 14px 20px; border-radius: 16px; } .wrap { padding: 0 14px; } .hero h1 { font-size: 22px; } .keyline { display: none; }
-  .pill .lbl { display: none; }
+  .pill .lbl { display: none; } .cat.untested { grid-template-columns: minmax(0, 1fr); gap: 2px 0; } .cat.untested span:nth-child(even) { margin-bottom: 10px; }
 }
 </style>
 </head>
@@ -219,8 +213,8 @@ footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--ring);
   </div>
 </header>
 <main class="wrap">
-  <div class="hero"><div><h1>Is it time to buy, or time to be careful?</h1><p>Each gauge ranks today's fear against history and shows what the market actually did after readings like this one. Select a gauge to see what is behind it.</p></div>
-    <div class="keyline"><span>Fear · buy</span><span class="ramp"></span><span>Complacent · caution</span></div></div>
+  <div class="hero"><div><h1>Is it time to buy, or time to be careful?</h1><p>Two gauges rank today's fear against history, the third ranks how expensive stocks are. Each shows what the market actually did after readings like this one. Select a gauge to see what is behind it.</p></div>
+    <div class="keyline"><span>Fear or cheap · buy</span><span class="ramp"></span><span>Complacent or expensive · caution</span></div></div>
   <div class="alerts" id="alerts" hidden></div>
   <div class="tiles" id="tiles"><div class="empty">Loading…</div></div>
   <div class="detail" id="detail" hidden></div>
@@ -252,11 +246,11 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 
 /* Half-circle dial: five zone arcs, alert ticks, needle. 0 is at the left, 100 at the right. */
 function dial(g) {
-  const cx = 110, cy = 112, r = 88, gap = 1.1, t = thr(g.id);
+  const cx = 110, cy = 112, r = 88, gap = 1.1, t = D.alerts && D.alerts.thresholds && D.alerts.thresholds[g.id];
   const pt = (s, rad = r) => { const a = Math.PI * (1 - s / 100); return [(cx + rad * Math.cos(a)).toFixed(2), (cy - rad * Math.sin(a)).toFixed(2)]; };
   const arcs = ZONES.map(([k, lo, hi]) => { const a = pt(lo + (lo > 0 ? gap / 2 : 0)), b = pt(hi - (hi < 100 ? gap / 2 : 0)); return `<path d="M${a[0]} ${a[1]} A${r} ${r} 0 0 1 ${b[0]} ${b[1]}" fill="none" stroke="var(${ZC[k]})" stroke-width="13" opacity="${k === g.zone.key ? 1 : .42}"/>`; }).join("");
   const tick = (s, lab) => { const a = pt(s, r + 10), b = pt(s, r + 18); return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"><title>${lab}</title></line>`; };
-  return `<svg viewBox="0 0 220 128" role="img" aria-label="Score ${g.score.toFixed(0)} of 100, ${esc(g.zone.label)}">${arcs}${tick(t.below, "Alert at or below " + t.below)}${tick(t.above, "Alert at or above " + t.above)}
+  return `<svg viewBox="0 0 220 128" role="img" aria-label="Score ${g.score.toFixed(0)} of 100, ${esc(g.zone.label)}">${arcs}${t ? tick(t.below, "Alert at or below " + t.below) + tick(t.above, "Alert at or above " + t.above) : ""}
     <g class="needle" style="--rot:${(g.score * 1.8).toFixed(1)}deg${firstPaint ? "" : ";animation:none"}"><path d="M${cx - r + 20} ${cy} L${cx} ${cy - 3.6} L${cx + 9} ${cy} L${cx} ${cy + 3.6} Z" fill="var(--ink)"/></g>
     <circle cx="${cx}" cy="${cy}" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5"/>
     <text x="${cx - r}" y="${cy + 15}" text-anchor="middle" font-size="10" fill="var(--muted)">0</text><text x="${cx + r}" y="${cy + 15}" text-anchor="middle" font-size="10" fill="var(--muted)">100</text></svg>`;
@@ -281,21 +275,21 @@ function gaugeTile(g) {
   </button>`;
 }
 
-function ltTile(L) {
-  if (!L) return `<div class="tile" style="cursor:default"><div class="thead"><span class="tn">S&amp;P 500 · next 10 years</span></div><p class="ltnote">Long-term model unavailable (see Status).</p></div>`;
-  const e = L.expected, lo = Math.min(-5, Math.floor(e.low - 2)), hi = Math.max(15, Math.ceil(L.hist_avg + 2)), x = v => ((v - lo) / (hi - lo) * 100).toFixed(1);
-  const zc = e.mid < 5 ? "--z5" : e.mid > 12 ? "--z1" : "--z3";   // expensive market = the complacent end of the scale
-  return `<button class="tile" type="button" data-view="lt" aria-expanded="${view === "lt"}" style="--zc:var(${zc})">
-    <div class="thead"><span class="tn">S&amp;P 500 · next 10 years</span><span class="th">valuation, not timing</span></div>
-    <div class="read" style="margin-top:26px"><span class="val">${sgn(e.mid)}<small>a year</small></span><div class="zrow"><span class="zchip">${esc(L.zone)} outlook</span></div></div>
-    <div class="ltbox"><div class="ltbar"><div class="track"></div><div class="band" style="left:${x(e.low)}%;width:${(x(e.high) - x(e.low)).toFixed(1)}%" title="The two models: ${sgn(e.low)} and ${sgn(e.high)} a year"></div><div class="dot" style="left:${x(e.mid)}%"></div>${L.treasury10 != null ? `<div class="tick down" style="left:${x(L.treasury10)}%"><span>Treasury ${L.treasury10.toFixed(1)}%</span></div>` : ""}<div class="tick" style="left:${x(L.hist_avg)}%"><span>Average ${sgn(L.hist_avg)}</span></div></div><div class="ends"><span>${sgn(lo, 0)} a year</span><span>${sgn(hi, 0)}</span></div></div>
-    <p class="ltnote">Valuation implies <b>${sgn(e.low)}</b> to <b>${sgn(e.high)}</b> a year, against a long-run average of ${sgn(L.hist_avg)}.</p>
-    <div class="tfoot"><div class="d">${L.models.map(m => `<span>${esc(m.name.replace("Investor ", "").replace("Shiller ", ""))} <b>${m.pct.toFixed(0)}th pct</b></span>`).join("")}</div></div>
+const FH = ["1y", "3y", "5y", "10y"], FN = { "1y": "1 year", "3y": "3 years", "5y": "5 years", "10y": "10 years" };
+function fundTile(F) {
+  if (!F) return `<div class="tile" style="cursor:default"><div class="thead"><span class="tn">Fundamentals</span></div><p class="ltnote">Fundamentals model unavailable (see Status).</p></div>`;
+  const e = F.expected, z = F.now.zone.h["10y"], b = F.now.base["10y"];
+  return `<button class="tile" type="button" data-view="fund" aria-expanded="${view === "fund"}" style="--zc:var(${ZC[F.zone.key]})">
+    <div class="thead"><span class="tn">Fundamentals</span><span class="th">next 5–10 years</span></div>
+    <div class="dial">${dial(F)}</div>
+    <div class="read"><span class="val">${F.score.toFixed(0)}<small>/ 100</small></span><div class="zrow"><span class="zchip">${sw(F.zone.key)}${esc(F.zone.label)}</span>${signal(F.zone)}</div></div>
+    <div class="stats"><div class="stat" title="Average of ${e.models} valuation models: ${sgn(e.low)} to ${sgn(e.high)} a year"><b>${sgn(e.mid)}</b><span>a year expected over the next 10 years</span><small>long-run average ${sgn(F.hist_avg)}</small></div><div class="stat" title="Median annualized S&P 500 total return over the 10 years after past readings in this zone"><b>${z ? sgn(z.median) : "—"}</b><span>a year in the decade after past readings like this</span><small>any time ${sgn(b.median)}</small></div></div>
+    <div class="tfoot"><div class="d"><span>1M <b>${sgn(F.chg.m1, 0, "")}</b></span><span>1Y <b>${sgn(F.chg.y1, 0, "")}</b></span><span>5Y <b>${sgn(F.chg.y5, 0, "")}</b></span></div><div class="spark">${spark(F.spark, "fund")}</div></div>
   </button>`;
 }
 
 function renderTiles() {
-  $("#tiles").innerHTML = gaugeTile(D.gauges.spx) + gaugeTile(D.gauges.ai) + ltTile(D.longterm);
+  $("#tiles").innerHTML = gaugeTile(D.gauges.spx) + gaugeTile(D.gauges.ai) + fundTile(D.fundamentals);
   firstPaint = false;
   document.querySelectorAll(".tile[data-view]").forEach(b => b.onclick = () => { jump = view !== b.dataset.view; location.hash = view === b.dataset.view ? "" : b.dataset.view; });
   const act = (D.alerts && D.alerts.active) || [], el = $("#alerts");
@@ -388,20 +382,44 @@ function gaugeDetail(g) {
   ${g.id === "ai" ? aiContext() : ""}</div>`;
 }
 
-function ltDetail(L) {
-  const rows = L.models.map(m => {
-    const open = openInd === m.id;
-    let h = `<tr class="ind ${open ? "open" : ""}" data-ind="${m.id}" tabindex="0" aria-expanded="${open}"><td><span class="car">›</span> ${esc(m.name)}</td><td>${fval(m)}<small>official ${fval(m, m.official)}, ${esc(m.official_as_of)}</small></td><td>${m.pct.toFixed(0)}th<small>of its history</small></td><td><b>${sgn(m.pred)}</b><small>± ${m.se.toFixed(1)} typical miss</small></td><td>${Math.round(m.r2 * 100)}%<small>of variation explained</small></td><td>${m.oos.mae != null ? `${m.oos.mae.toFixed(1)} pts<small>vs ${m.oos.mae_naive.toFixed(1)} using the average</small>` : "—"}</td></tr>`;
-    if (open) h += `<tr class="exp"><td colspan="6"><div class="expg"><div><p><b>What it is.</b> ${esc(m.what)}</p><p><b>Why it is here.</b> ${esc(m.why)}</p>${m.extrapolated ? `<p><b>Outside its history.</b> Today's reading is above every value the model was fitted on (previous high ${fval(m, m.hist_max)}, ${fdate(m.hist_max_date, { month: "short", year: "numeric" })}), so the estimate is an extrapolation.</p>` : ""}<p class="muted">Fitted on 10-year windows starting ${m.since} or later. Out-of-sample check: refit at each date using only windows that had already finished (${m.oos.n} forecasts since ${fdate(m.oos.from, { year: "numeric" })}, correlation with the outcome ${m.oos.corr}). Source: ${esc(m.source)}.</p></div><div><div class="chart md" id="indchart"></div><div class="legend" style="padding:6px 0 0"><span><i class="ln" style="background:var(--s1)"></i>Model's estimate at the time</span><span><i class="ln" style="background:var(--s2)"></i>What the next 10 years delivered</span></div></div></div></td></tr>`;
-    return h;
-  }).join("");
-  const e = L.expected;
-  return `<div class="dcard"><div class="dhead"><h2>S&amp;P 500 · next 10 years</h2><span class="zchip">${sgn(e.mid)} a year · ${esc(L.zone)}</span><a class="x pill" href="#">Close</a></div>
-  <p class="dsub">What today's valuation has historically meant for the following decade, as a nominal total return (dividends included, before inflation). This layer moves slowly and says nothing about the next year: expensive markets have stayed expensive for a long time. Use it to set expectations and overall exposure, and the tactical gauges for timing.</p>
-  <div class="kv"><div class="card"><div class="k">Expected, next 10 years</div><div class="v num">${sgn(e.mid)}</div><div class="s">a year, average of the two models</div></div><div class="card"><div class="k">Model range</div><div class="v num">${sgn(e.low, 1, "")} to ${sgn(e.high)}</div><div class="s">a year</div></div><div class="card"><div class="k">Long-run average</div><div class="v num">${sgn(L.hist_avg)}</div><div class="s">a year, 10-year windows since 1951</div></div><div class="card"><div class="k">10-year Treasury</div><div class="v num">${L.treasury10 != null ? L.treasury10.toFixed(2) + "%" : "—"}</div><div class="s">the alternative, held to maturity</div></div></div>
-  <section class="blk"><div class="bh"><h3>The two models</h3><span class="sub">select a row for its history</span></div>
-  <div class="card scroll"><table><thead><tr><th>Measure</th><th>Today</th><th>Percentile</th><th>Implied 10-year return</th><th>Fit</th><th>Average miss, out of sample</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <p class="note">Each model is a one-variable regression of the subsequent 10-year return on the measure. Ten-year windows overlap heavily, so there are only about seven independent decades behind these fits and the true uncertainty is wider than "typical miss" suggests. Today's values are moved from the last official figure with the S&amp;P 500's change since.</p></section></div>`;
+function fundRow(m) {
+  const open = openInd === m.id;
+  let h = `<tr class="ind ${open ? "open" : ""}" data-ind="${m.id}" tabindex="0" aria-expanded="${open}"><td><span class="car">›</span> ${esc(m.name)}</td><td>${fval(m)}<small>official ${fval(m, m.official)}, ${esc(m.official_as_of)}</small></td><td><span class="pos" title="${m.pct.toFixed(0)} of 100 (100 = most expensive reading since ${m.since})"><span class="mark" style="left:${m.pct}%"></span></span><small>rank ${m.pct.toFixed(0)}</small></td><td>${m.pred == null ? "—" : `<b>${sgn(m.pred)}</b><small>a year</small>`}</td><td>${dots(m.grade)}<small>${m.oos ? `missed by ${m.oos.mae.toFixed(1)} pts; the average by ${m.oos.mae_naive.toFixed(1)}` : ""}</small></td></tr>`;
+  if (!open) return h;
+  const r2 = v => v == null ? "—" : v < 0 ? `<span class="muted">wrong way</span>` : Math.round(v * 100) + "%";
+  const o = m.oos;
+  return h + `<tr class="exp"><td colspan="5"><div class="expg"><div><p><b>What it is.</b> ${esc(m.what)}</p><p><b>${m.role === "scored" ? "Why it is in the gauge." : "Why it is not in the gauge."}</b> ${esc(m.why)}</p>
+    <div class="scroll"><table class="mini"><thead><tr><th>Share of later returns it explains</th>${FH.map(h => `<th>${FN[h]}</th>`).join("")}<th>Before 1988</th><th>Since</th></tr></thead><tbody><tr><td>Since ${m.since}</td>${FH.map(h => `<td>${r2(m.r2[h])}</td>`).join("")}<td>${r2(m.pre)}</td><td>${r2(m.post)}</td></tr></tbody></table></div>
+    ${m.extrapolated ? `<p style="margin-top:8px"><b>Outside its history.</b> Today's reading is beyond every value the model was fitted on, so its estimate is an extrapolation.</p>` : ""}
+    <p class="muted" style="margin-top:8px">${o ? `Out of sample: ${o.n} forecasts since ${fdate(o.from, { year: "numeric" })}, each fitted only on decades that had already finished. Correlation with what followed ${o.corr}; average miss ${o.mae.toFixed(1)} points a year, against ${o.mae_naive.toFixed(1)} from assuming the average return. ` : ""}${m.exp === "low" ? "Low readings mean expensive. " : "High readings mean expensive. "}Source: ${esc(m.source)}.</p></div>
+    <div><div class="chart md" id="indchart"></div><div class="legend" style="padding:6px 0 0"><span><i class="ln" style="background:var(--s1)"></i>What this measure implies, using today's fit</span><span><i class="ln" style="background:var(--s2)"></i>What the next 10 years delivered</span></div></div></div></td></tr>`;
+}
+
+function fundTable(F, role) {
+  const head = `<thead><tr><th>Measure</th><th>Today</th><th>Cheap ← → Expensive</th><th>Implied 10-year return</th><th>Evidence, out of sample</th></tr></thead>`;
+  return `<div class="card scroll"><table>${head}<tbody>${F.inputs.filter(m => m.role === role).map(fundRow).join("")}</tbody></table></div>`;
+}
+
+function fundDetail(F) {
+  const e = F.expected, rec = F.record;
+  const cell = s => s ? `<td title="Average ${sgn(s.mean)} a year · middle 80% of outcomes ${sgn(s.p10)} to ${sgn(s.p90)} · ${s.n} months">${sgn(s.median)}<small>${s.hit}% positive</small><i class="hb"><b style="width:${s.hit}%"></b></i></td>` : `<td class="muted">—<small>too few</small></td>`;
+  const zrows = F.odds.zones.map(z => `<tr class="${z.key === F.zone.key ? "now" : ""}" style="--zc:var(${ZC[z.key]})"><td><span class="zl">${sw(z.key)}${esc(z.label)} <small class="muted">${z.lo}–${z.hi}</small></span>${z.key === F.zone.key ? `<span class="badge">now</span>` : ""}</td><td>${z.months}</td>${FH.map(h => cell(z.h[h])).join("")}</tr>`).join("");
+  const nScored = F.inputs.filter(m => m.role === "scored").length, nCtx = F.inputs.length - nScored;
+  const nav = [["sec-odds", "What happened next"], ["sec-hist", "History"], ["sec-in", "Inputs"], ["sec-ctx", "Tested, not scored"], ["sec-un", "Could not be tested"]];
+  return `<div class="dcard" style="--zc:var(${ZC[F.zone.key]})"><div class="dhead"><h2>Fundamentals</h2><span class="zchip">${sw(F.zone.key)}${F.score.toFixed(1)} · ${esc(F.zone.label)}</span>${signal(F.zone)}<a class="x pill" href="#">Close</a></div>
+  <p class="dsub">How expensive the S&amp;P 500 is on the ${nScored} valuation measures that have predicted its returns, ranked against every month since 1951 (0 = cheapest, 100 = most expensive). This gauge is slow: it says almost nothing about the next year and a great deal about the next ten. Use it to set expectations and overall exposure, and the other two gauges for timing.</p>
+  <div class="kv"><div class="card"><div class="k">Expected, next 10 years</div><div class="v num">${sgn(e.mid)}</div><div class="s">a year, average of ${e.models} models</div></div><div class="card"><div class="k">The ${e.models} models range from</div><div class="v num">${sgn(e.low, 1, "")} to ${sgn(e.high)}</div><div class="s">a year</div></div><div class="card"><div class="k">Long-run average</div><div class="v num">${sgn(F.hist_avg)}</div><div class="s">a year, 10-year windows since 1951</div></div><div class="card"><div class="k">10-year Treasury</div><div class="v num">${F.treasury10 != null ? F.treasury10.toFixed(2) + "%" : "—"}</div><div class="s">the alternative, held to maturity</div></div></div>
+  <nav class="subnav" style="margin-top:18px">${nav.map(([id, n]) => `<button type="button" data-go="${id}">${n}</button>`).join("")}</nav>
+  <section class="blk" id="sec-odds" style="margin-top:0"><div class="bh"><h3>What happened next</h3><span class="sub">every month since ${fdate(F.odds.since, { year: "numeric" })}, grouped by score</span></div>
+    <div class="card scroll"><table><thead><tr><th>Valuation zone</th><th>Months</th>${FH.map(h => `<th>Next ${FN[h]}</th>`).join("")}</tr></thead><tbody>${zrows}<tr class="allrow"><td>Any month</td><td>${F.odds.months}</td>${FH.map(h => cell(F.odds.base[h])).join("")}</tr></tbody></table></div>
+    <p class="note">Median S&amp;P 500 total return per year (dividends included, before inflation) after every month the score sat in each zone, and how often it was positive. Months overlap almost entirely, so each zone is really a handful of episodes: "Very expensive" with a completed decade behind it is the 2000–01 dot-com peak and nothing else.</p>
+    <div class="ev">${rec ? `<div class="card evc wide"><h4>Track record of the 10-year estimate ${dots(rec.mae <= 0.8 * rec.mae_naive ? "strong" : rec.mae < rec.mae_naive ? "moderate" : "weak")}</h4>Tested out of sample: at each date since ${fdate(rec.from, { year: "numeric" })} the models were fitted only on decades that had already finished, then compared with what the next ten years delivered. The estimate missed by <b>${rec.mae.toFixed(1)} points a year</b> on average, against ${rec.mae_naive.toFixed(1)} from simply assuming the historical average; correlation with the outcome ${rec.corr}. Ten-year windows overlap, so this rests on about four independent decades.</div>` : ""}</div></section>
+  <section class="blk" id="sec-hist"><div class="bh"><h3>History</h3><span class="sub">score above; below, what the models expected and what happened</span></div>
+    <div class="card"><div class="chart" id="hist"></div><div class="legend"><span><i class="sw" style="background:var(--z1)"></i>Very cheap (score ≤ 10)</span><span><i class="sw" style="background:var(--z5)"></i>Very expensive (score ≥ 90)</span><span><i class="ln" style="background:var(--s1)"></i>Expected at the time (fitted only on finished decades, so it starts in 1983)</span><span><i class="ln" style="background:var(--s2)"></i>What the next 10 years delivered</span></div></div></section>
+  <section class="blk" id="sec-in"><div class="bh"><h3>What is in the gauge</h3><span class="sub">${nScored} measures that beat the historical average at predicting 10-year returns, before and after 1988 · select a row</span></div>${fundTable(F, "scored")}
+    <p class="note">Rank: 0 is the cheapest reading since 1951, 100 the most expensive. The score is the average rank; the expected return is the average of the five implied returns. Today's values are moved from the last official figure with the S&amp;P 500's change since.</p></section>
+  <details class="fold" id="sec-ctx" data-fold="fctx" style="margin-top:30px"><summary>Tested, not scored <span class="sub">${nCtx} measures, with the reason each was left out</span></summary><div class="inner">${fundTable(F, "context")}</div></details>
+  <details class="fold" id="sec-un" data-fold="fun"><summary>Could not be tested <span class="sub">${F.untested.length} measures with no free history</span></summary><div class="inner"><div class="card cat untested">${F.untested.map(u => `<span><b>${esc(u.name)}</b></span><span class="ink2">${esc(u.why)}</span>`).join("")}</div></div></details></div>`;
 }
 
 /* ---------------------------------------------------------------- charts */
@@ -442,11 +460,30 @@ function histChart(g) {
   });
 }
 
+function fundChart() {
+  const el = $("#hist"), h = H && H.fundamentals && H.fundamentals._gauge; if (!el || !h) return;
+  const c = base(), pair = k => h.dates.map((d, i) => [d, h[k][i]]);
+  mk(el).setOption({
+    animation: false, axisPointer: { link: [{ xAxisIndex: "all" }] },
+    tooltip: { trigger: "axis", ...tipCommon(c), formatter: ps => `<div style="color:${c.muted};margin-bottom:2px">${fdate(ps[0].value[0], { month: "short", year: "numeric" })}</div>` + ps.filter(p => p.value[1] != null).map(p => p.seriesIndex === 0 ? `Score <b>${p.value[1].toFixed(0)}</b>` : `${p.marker} ${p.seriesName} <b>${sgn(p.value[1])}</b> a year`).join("<br>") },
+    title: [{ text: "Score", left: 10, top: 8, textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }, { text: "10-year return, per year", left: 10, top: "50%", textStyle: { color: c.ink2, fontSize: 12, fontWeight: 500 } }],
+    grid: [{ left: 50, right: 20, top: 32, height: "35%" }, { left: 50, right: 20, top: "57%", bottom: 30 }],
+    xAxis: [{ type: "time", gridIndex: 0, ...axisCommon(c), axisLabel: { show: false }, splitLine: { show: false } }, { type: "time", gridIndex: 1, ...axisCommon(c), splitLine: { show: false } }],
+    yAxis: [{ gridIndex: 0, min: 0, max: 100, interval: 25, ...axisCommon(c) }, { gridIndex: 1, type: "value", ...axisCommon(c), axisLabel: { color: c.muted, fontSize: 11, formatter: "{value}%" } }],
+    visualMap: { show: false, seriesIndex: 0, dimension: 1, pieces: [{ lte: 10, color: c.z1 }, { gt: 10, lt: 90, color: c.ink }, { gte: 90, color: c.z5 }] },
+    series: [
+      { name: "Score", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: pair("score"), showSymbol: false, lineStyle: { width: 1.6 },
+        markArea: { silent: true, data: [[{ yAxis: 0, itemStyle: { color: c.z1, opacity: .16 } }, { yAxis: 10 }], [{ yAxis: 90, itemStyle: { color: c.z5, opacity: .16 } }, { yAxis: 100 }]] } },
+      { name: "Expected", type: "line", xAxisIndex: 1, yAxisIndex: 1, data: pair("estimate"), showSymbol: false, lineStyle: { width: 2, color: c.s1 }, itemStyle: { color: c.s1 } },
+      { name: "Delivered", type: "line", xAxisIndex: 1, yAxisIndex: 1, data: pair("realized"), showSymbol: false, lineStyle: { width: 2, color: c.s2 }, itemStyle: { color: c.s2 } }],
+  });
+}
+
 function indChart(g) {
   const el = $("#indchart"); if (!el || !H || !openInd) return;
   const c = base();
-  if (view === "lt") {
-    const h = H.longterm[openInd]; if (!h) return;
+  if (view === "fund") {
+    const h = H.fundamentals[openInd]; if (!h) return;
     mk(el).setOption({ animation: false, grid: { left: 44, right: 16, top: 16, bottom: 28 },
       tooltip: { trigger: "axis", ...tipCommon(c), formatter: ps => `<div style="color:${c.muted}">${fdate(ps[0].value[0], { month: "short", year: "numeric" })}</div>` + ps.filter(p => p.value[1] != null).map(p => `${p.marker} ${p.seriesName} <b>${sgn(p.value[1])}</b> a year`).join("<br>") },
       xAxis: { type: "time", ...axisCommon(c), splitLine: { show: false } }, yAxis: { type: "value", ...axisCommon(c), axisLabel: { color: c.muted, fontSize: 11, formatter: "{value}%" } },
@@ -478,9 +515,9 @@ async function renderDetail() {
   const el = $("#detail");
   if (!view) { el.hidden = true; el.innerHTML = ""; return; }
   const g = D.gauges[view];
-  if (view === "lt" && !D.longterm) { view = null; el.hidden = true; return; }
+  if (view === "fund" && !D.fundamentals) { view = null; el.hidden = true; return; }
   el.hidden = false;
-  el.innerHTML = view === "lt" ? ltDetail(D.longterm) : gaugeDetail(g);
+  el.innerHTML = view === "fund" ? fundDetail(D.fundamentals) : gaugeDetail(g);
   el.querySelectorAll("tr.ind").forEach(r => { const go = () => { openInd = openInd === r.dataset.ind ? null : r.dataset.ind; renderDetail(); }; r.onclick = go; r.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }; });
   el.querySelectorAll("#rangeseg button").forEach(b => b.onclick = () => { range = b.dataset.range; renderDetail(); });
   el.querySelectorAll("#epseg button").forEach(b => b.onclick = () => { epSide = b.dataset.ep; renderDetail(); });
@@ -488,7 +525,7 @@ async function renderDetail() {
   el.querySelectorAll("details.fold").forEach(d => { if (folds.has(d.dataset.fold)) d.open = true; d.ontoggle = () => { d.open ? folds.add(d.dataset.fold) : folds.delete(d.dataset.fold); if (d.dataset.fold === "gpu" && d.open) gpuChart(); if (d.open) charts.forEach(c => c.resize()); }; });
   el.querySelectorAll(".subnav button").forEach(b => b.onclick = () => { const t = document.getElementById(b.dataset.go); if (!t) return; if (t.tagName === "DETAILS") t.open = true; t.scrollIntoView({ behavior: "smooth", block: "start" }); });
   if (!H) { try { H = await (await fetch("../data/signals_history.json?t=" + encodeURIComponent(D.generated_at))).json(); } catch (e) { H = null; } }
-  if (view !== "lt") histChart(g);
+  if (view === "fund") fundChart(); else histChart(g);
   indChart(g);
   gpuChart();
   if (jump) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -509,7 +546,7 @@ function renderMeta() {
 }
 
 function route() {
-  const h = location.hash.replace("#", ""), next = ["spx", "ai", "lt"].includes(h) ? h : null;
+  const h0 = location.hash.replace("#", ""), h = h0 === "lt" ? "fund" : h0, next = ["spx", "ai", "fund"].includes(h) ? h : null;
   if (next !== view) openInd = null;
   view = next;
   if (!D) return;

@@ -1,7 +1,7 @@
 # Market Gauges
 
 Contrarian buy/sell gauges for the S&P 500 and for AI and semiconductor stocks,
-plus a slow valuation read on the next decade. Live at
+plus a fundamentals gauge for the next decade. Live at
 <https://market-gauges.vercel.app/dashboard/>, rebuilt after every US session.
 
 The dashboard shows three tiles. Select one for the detail behind it; select any
@@ -11,7 +11,7 @@ row in the detail for that input's own chart and track record.
 |---|---|---|
 | **S&P 500** | 0–100 score from six volatility and options-positioning inputs | 1 to 12 months |
 | **AI & semiconductors** | 0–100 score from four volatility inputs, judged against the PHLX Semiconductor index | 1 to 12 months |
-| **S&P 500 · next 10 years** | Expected annual return implied by investor equity allocation and CAPE | 10 years |
+| **Fundamentals** | 0–100 score (cheap to expensive) from five valuation measures, with the 10-year return they imply | 5 to 10 years |
 
 0 is extreme fear (historically the time to buy), 100 is complacency. A score of
 10 or lower is the **buy zone**; 90 or higher is the **caution zone**.
@@ -59,9 +59,10 @@ current ones):
 - **Sell side is weak.** S&P 500 score ≥ 90: +0.7% over 3 months against +2.5%
   (p ≈ 0.04). Returns after complacency were below average, not negative. For
   semis it is not statistically distinguishable from chance at 3 months.
-- **Valuation is the long-horizon signal.** Fitted out of sample, investor
-  equity allocation missed the subsequent 10-year return by 2.6 points a year on
-  average, against 4.9 for the historical mean.
+- **Valuation is the long-horizon signal.** The blend of five valuation
+  models, fitted out of sample, missed the subsequent 10-year return by 2.7
+  points a year on average, against 4.7 for the historical mean. It says almost
+  nothing about the next year.
 
 Caveat that applies to all of it: inputs and zone edges were chosen on this same
 history, which flatters every number to some degree.
@@ -119,9 +120,44 @@ semis' relative strength.
 | McClellan summation, net highs−lows | Breadth, now covered by the two breadth context metrics |
 | NVDA option IV and skew, option-volume ratios, leveraged-ETF flows | Weeks of history only |
 | Wikipedia and GDELT attention, earnings-release tone | Failed the old backtest, or sources that kept breaking |
-| S&P 500 valuation panel (forward P/E, ERP, dividend yield, equities/GDP) | Replaced by the 10-year layer, which keeps the two measures that predict |
+| S&P 500 valuation panel (forward P/E, ERP, dividend yield, equities/GDP) | Replaced by the fundamentals gauge, which scores the measures that predict and shows the rest with the reason |
 
 The AI company table and the catalyst calendar are kept, behind the AI gauge.
+
+## The fundamentals gauge
+
+Every candidate was judged the same way on monthly data since 1951: a
+one-variable regression against the S&P 500's subsequent 10-year total return,
+refitted out of sample using only decades that had already finished, and
+required to hold the same sign before and after 1988. A measure is scored only
+if its out-of-sample miss beats simply assuming the historical average.
+
+| Measure | Verdict | Out-of-sample miss (average: 4.9 pts a year) |
+|---|---|---|
+| Investor equity allocation (Fed Z.1) | **Scored.** Best single predictor | 2.6 |
+| Tobin's Q | **Scored.** Weaker since 1988 | 3.5 |
+| Equity risk premium, as Shiller's excess CAPE yield | **Scored** | 3.9 (average 4.7) |
+| Shiller CAPE | **Scored.** Same strength in both halves | 4.3 |
+| Shareholder yield (dividends + net buybacks) | **Scored**, modestly | 4.1 |
+| Trailing P/E | Not scored: barely beats the average, weak since 1988 | 4.7 |
+| Dividend yield | Not scored: payouts moved to buybacks | 5.0 |
+| Buffett indicator (market value / GDP) | Not scored: right direction, level keeps drifting up | 5.5 |
+| Price to sales (market value / gross value added) | Not scored: same as Buffett | 5.7 |
+| ERP as earnings yield minus Treasury yield (Fed model) | Rejected: no relation, wrong way out of sample | 6.2 |
+| Net buyback yield alone | Rejected | 9.9 |
+| Net profit margin; corporate profits / GDP | Rejected: no relation to later returns at any horizon | 6.2; 5.7 |
+| Trailing EPS growth | Rejected: no relation | 5.4 |
+| Forward P/E; free cash flow yield; forward EPS growth and revisions | Not testable: no free history | — |
+
+The 0–100 score is the average percentile of the five scored measures (0 =
+cheapest month since 1951). The expected return is the average of their five
+separate forecasts, which out of sample was as accurate as the best single
+measure (2.7 against 4.7) without depending on one series. Ranking the inputs
+as percentiles before fitting was tried and rejected: it discards how far
+beyond its history a reading is. Index-level price to sales, margins and
+Tobin's Q use the Fed's and BEA's nonfinancial-corporate accounts, the free
+equivalents of the S&P 500 figures. This gauge sends no alerts: it moves over
+years, and has read "expensive" or higher in 24 of the last 40 quarters.
 
 ## How it runs
 
@@ -129,8 +165,8 @@ The AI company table and the catalyst calendar are kept, behind the AI gauge.
 .github/workflows/refresh.yml   02:00 UTC Tue–Sat (+ 10:00 UTC retry)
   └─ python -m signals.build
        fetch    Yahoo (indices, 503 members, AI basket) · Cboe (COR1M, VVIX, SKEW, put/call)
-                FRED (Z.1, Baa, HY, 10y) · shillerdata.com · AAII · SSGA · Nebius · Finnhub
-       score    src/signals/gauges.py, model.py, longterm.py
+                FRED (Z.1, corporate accounts, Baa, HY, 10y) · shillerdata.com · AAII · SSGA · Nebius · Finnhub
+       score    src/signals/gauges.py, model.py, fundamentals.py
        write    data/signals.json, data/signals_history.json, data/state/*
   └─ python -m signals.alerts --send   (GitHub issue when a threshold is crossed)
   └─ commit → Vercel redeploys dashboard/index.html
@@ -163,7 +199,7 @@ commit a locally built `data/signals.json` unless you mean to publish it.
 
 ```
 src/signals/    fetch.py · gauges.py (indicator definitions) · model.py (scoring, odds, evidence)
-                longterm.py · companies.py · alerts.py · build.py
+                fundamentals.py · companies.py · alerts.py · build.py
 dashboard/      index.html (static; ECharts from cdnjs)
 config/         alerts.yaml (thresholds) · calendar.yaml (macro dates for the catalyst list)
 data/           signals.json · signals_history.json · state/
