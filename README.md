@@ -11,7 +11,7 @@ row in the detail for that input's own chart and track record.
 |---|---|---|
 | **S&P 500** | 0–100 score from six volatility and options-positioning inputs | 1 to 12 months |
 | **AI & semiconductors** | 0–100 score from four volatility inputs, judged against the PHLX Semiconductor index | 1 to 12 months |
-| **Fundamentals** | 0–100 score (cheap to expensive) from five valuation measures, with the 10-year return they imply | 5 to 10 years |
+| **Fundamentals** | 0–100 score (cheap to expensive) from five valuation measures, each read against all history and against its own last 30 years, with the 10-year return they imply | 5 to 10 years |
 
 0 is extreme fear (historically the time to buy), 100 is complacency. A score of
 10 or lower is the **buy zone**; 90 or higher is the **caution zone**.
@@ -60,9 +60,9 @@ current ones):
   (p ≈ 0.04). Returns after complacency were below average, not negative. For
   semis it is not statistically distinguishable from chance at 3 months.
 - **Valuation is the long-horizon signal.** The blend of five valuation
-  models, fitted out of sample, missed the subsequent 10-year return by 2.7
+  measures, fitted out of sample, missed the subsequent 10-year return by 2.5
   points a year on average, against 4.7 for the historical mean. It says almost
-  nothing about the next year.
+  nothing about the next year, and it has run too pessimistic since 2009.
 
 Caveat that applies to all of it: inputs and zone edges were chosen on this same
 history, which flatters every number to some degree.
@@ -149,15 +149,41 @@ if its out-of-sample miss beats simply assuming the historical average.
 | Trailing EPS growth | Rejected: no relation | 5.4 |
 | Forward P/E; free cash flow yield; forward EPS growth and revisions | Not testable: no free history | — |
 
-The 0–100 score is the average percentile of the five scored measures (0 =
-cheapest month since 1951). The expected return is the average of their five
-separate forecasts, which out of sample was as accurate as the best single
-measure (2.7 against 4.7) without depending on one series. Ranking the inputs
-as percentiles before fitting was tried and rejected: it discards how far
-beyond its history a reading is. Index-level price to sales, margins and
-Tobin's Q use the Fed's and BEA's nonfinancial-corporate accounts, the free
-equivalents of the S&P 500 figures. This gauge sends no alerts: it moves over
-years, and has read "expensive" or higher in 24 of the last 40 quarters.
+### Two yardsticks, and what was tried to make the gauge less bearish
+
+Each scored measure is read twice: against **all history since 1951**, and
+against **its own trailing 30-year average**. The second was added on
+2026-11-11 after checking the gauge's recent record: for decades starting
+2009–2016, every one of the five models under-predicted, by 4.4 points a year
+on average. Out of sample the two yardsticks are about equally accurate (2.7
+points a year since 1983 for all history, 2.6 since 1998 for the 30-year one;
+on the years both cover the 30-year one is better, 2.6 against 3.2), and the
+blend is better than either (2.5 against 4.7 for the average). The 0–100 score
+is the mean of the ten ranks; the expected return is the mean of the two
+yardsticks' forecasts.
+
+What that changed, on the 2026-11-10 close: score 96 → 91, expected return
++3.7% → +5.4% a year (+3.7% against all history, +7.1% against the last 30
+years), and today now reads below the July 2000 peak (98) rather than above it.
+
+Tested at the same time and **not** adopted, because the data did not support
+them:
+
+| Idea | Result |
+|---|---|
+| Credit the market for strong earnings growth and wide margins | Neither has any relation to later returns alone, and adding either to a valuation model made its forecasts worse (margins helped one model slightly and hurt another) |
+| Credit calm credit spreads | No improvement to the forecast |
+| "Expensive but supported": split expensive months by earnings growing and credit calm | A small edge (about 2 points a year over the next year). It did not prevent 2000, when two thirds of months met both conditions. Shown on the dashboard as a check, not scored |
+| Add back the models' recent error | Made past forecasts worse: errors reverse rather than persist (at five years, the 1990s over-shoot was repaid in the 2000s) |
+| Damodaran's implied equity risk premium + Treasury yield (forward-looking; currently implies about 9% a year) | Fits the full sample since 1961, but out of sample since 1992 it missed by 4.0 points a year against 3.8 for the average. Shown as context |
+| Forward P/E | Still untestable: no free history |
+
+Ranking the inputs as percentiles before fitting was also tried and rejected: it
+discards how far beyond its history a reading is. Index-level price to sales,
+margins and Tobin's Q use the Fed's and BEA's nonfinancial-corporate accounts,
+the free equivalents of the S&P 500 figures. This gauge sends no alerts and
+shows no buy or caution signal: it moves over years and says nothing about
+timing.
 
 ## How it runs
 
@@ -165,7 +191,7 @@ years, and has read "expensive" or higher in 24 of the last 40 quarters.
 .github/workflows/refresh.yml   02:00 UTC Tue–Sat (+ 10:00 UTC retry)
   └─ python -m signals.build
        fetch    Yahoo (indices, 503 members, AI basket) · Cboe (COR1M, VVIX, SKEW, put/call)
-                FRED (Z.1, corporate accounts, Baa, HY, 10y) · shillerdata.com · AAII · SSGA · Nebius · Finnhub
+                FRED (Z.1, corporate accounts, Baa, HY, 10y) · shillerdata.com · Damodaran (NYU) · AAII · SSGA · Nebius · Finnhub
        score    src/signals/gauges.py, model.py, fundamentals.py
        write    data/signals.json, data/signals_history.json, data/state/*
   └─ python -m signals.alerts --send   (GitHub issue when a threshold is crossed)

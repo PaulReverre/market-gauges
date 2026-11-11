@@ -135,6 +135,7 @@ def main() -> None:
     aaii = slow("aaii_sentiment", F.aaii_sentiment, "AAII sentiment", 6)
     alloc = slow("aaii_allocation", F.aaii_allocation, "AAII allocation", 31)
     hy = soft("fred_hy_oas", lambda: F.fred("BAMLH0A0HYM2"), "FRED high-yield spread")
+    dam = slow("damodaran_erp", F.damodaran, "Damodaran implied ERP", 40)
     flows = soft("fred_fund_flows", lambda: F.fred_many(["BOGZ1FA653064100Q", "BOGZ1FA563064100Q"]), "FRED fund flows")
 
     # ---- gauges
@@ -151,7 +152,8 @@ def main() -> None:
     fund, fund_charts = None, {}
     if not z1.empty and not sh.empty and not corp.empty:
         try:
-            fund, fund_charts = FU.build(sh, z1, corp, spx, dgs10["DGS10"] if "DGS10" in dgs10 else None)
+            fund, fund_charts = FU.build(sh, z1, corp, spx, dgs10["DGS10"] if "DGS10" in dgs10 else None,
+                                         baa["BAA10Y"] if "BAA10Y" in baa else None, dam)
             print(f"fundamentals {fund['score']} {fund['zone']['label']} · 10y outlook {fund['expected']}", flush=True)
         except Exception as e:  # noqa: BLE001
             log.add("Fundamentals model", False, note=f"{type(e).__name__}: {e}"[:200])

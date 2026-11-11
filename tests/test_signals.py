@@ -252,7 +252,10 @@ def test_fundamentals_build_scores_expensive_markets_high():
     sh, z1, fr, spx = _fund_inputs()
     out, charts = FU.build(sh, z1, fr, spx, None)
     assert 0 <= out["score"] <= 100 and out["zone"]["label"] in FU.ZONE_LABEL.values()
-    assert out["expected"]["models"] == 5 and out["expected"]["low"] <= out["expected"]["mid"] <= out["expected"]["high"]
+    assert out["expected"]["models"] == 10 and out["expected"]["low"] <= out["expected"]["mid"] <= out["expected"]["high"]
+    v = out["views"]
+    assert min(v["history"]["pred"], v["era"]["pred"]) <= out["expected"]["mid"] <= max(v["history"]["pred"], v["era"]["pred"])
+    assert abs(out["score"] - (v["history"]["score"] + v["era"]["score"]) / 2) < 0.2          # the score is the two yardsticks averaged
     by = {r["id"]: r for r in out["inputs"]}
     assert [r["id"] for r in out["inputs"] if r["role"] == "scored"] == ["alloc", "tobin_q", "ecy", "cape", "payout"]
     assert by["cape"]["r2"]["10y"] > 0.3 and by["cape"]["grade"] in ("strong", "moderate")   # valuation mean-reverts by construction
@@ -260,7 +263,35 @@ def test_fundamentals_build_scores_expensive_markets_high():
     cheap, dear = out["odds"]["zones"][0]["h"]["10y"], out["odds"]["zones"][-1]["h"]["10y"]
     if cheap and dear:
         assert cheap["median"] > dear["median"]
-    assert set(charts["_gauge"]) == {"dates", "score", "estimate", "fitted", "realized"} and "cape" in charts
+    assert set(charts["_gauge"]) == {"dates", "score", "score_history", "score_era", "estimate", "realized"} and "cape" in charts
+    assert by["cape"]["era"] and 0 <= by["cape"]["era"]["pct"] <= 100 and by["pe"]["era"] is None   # only scored measures get the era yardstick
+    assert out["support"] is None                                                             # no credit series passed
+
+
+def test_era_yardstick_reads_a_new_plateau_as_less_extreme():
+    """A measure that steps up to a permanently higher level: record-high forever against all history,
+    but back to ordinary against its own 30-year average once the plateau has lasted."""
+    idx = pd.date_range("1951-01-01", periods=900, freq="MS")
+    rng = np.random.default_rng(3)
+    level = np.where(np.arange(900) < 400, 15.0, 30.0) + rng.normal(0, 1.0, 900)
+    m = FU.Metric("x", "X", "x", 1, "high", "scored", what="", why="", source="", series=pd.Series(level, index=idx),
+                  now=float(level[-1]), official=float(level[-1]), log=True)
+    y = pd.DataFrame({h: pd.Series(rng.normal(8, 3, 900), index=idx) for h in FU.HZ.values()})
+    row, _, _ = FU.evaluate(m, y, era=True)
+    assert row["pct"] > 60 and row["era"]["pct"] < row["pct"] and abs(row["era"]["avg"] - 30) < 2
+
+
+def test_support_check_splits_expensive_months():
+    idx = pd.date_range("1960-01-01", periods=480, freq="MS")
+    score = pd.Series(np.where(np.arange(480) % 40 < 20, 80.0, 50.0), index=idx)
+    eps = pd.Series(np.where(np.arange(480) % 80 < 40, 5.0, -5.0), index=idx)
+    baa = pd.Series(2.0, index=pd.date_range("1959-06-01", periods=600, freq="MS"))
+    Y = pd.DataFrame({h: pd.Series(np.where(eps > 0, 10.0, 2.0), index=idx) for h in FU.HZ.values()})
+    s = FU.support_check(score, Y, eps, baa)
+    yes, no = (next(r for r in s["rows"] if r["key"] == k) for k in ("yes", "no"))
+    assert yes["months"] + no["months"] == int((score >= 75).sum())
+    assert yes["h"]["1y"]["mean"] == 10 and no["h"]["1y"]["mean"] == 2 and s["now"]["supported"] in (True, False)
+    assert FU.support_check(score, Y, eps, None) is None
 
 
 def test_fundamentals_percentile_orientation():
@@ -270,4 +301,4 @@ def test_fundamentals_percentile_orientation():
     out, _ = FU.build(sh, z1, fr, spx, None)
     by = {r["id"]: r for r in out["inputs"]}
     assert by["cape"]["pct"] > 95 and by["ecy"]["pct"] > 90 and by["dy"]["pct"] > 95   # high P/E, low yields: all read "expensive"
-    assert out["score"] > 85 and out["zone"]["key"] in ("calm", "caution")
+    assert out["score"] > 70 and out["zone"]["key"] in ("calm", "caution")     # both yardsticks agree it is expensive

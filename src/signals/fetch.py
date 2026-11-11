@@ -261,6 +261,37 @@ def aaii_allocation() -> pd.DataFrame:
     return _aaii_xls(AAII_ALLOCATION, ["stock_funds", "stocks", "bond_funds", "bonds", "cash"])
 
 
+# --------------------------------------------------------------- Damodaran
+DAMODARAN_ANNUAL = "https://pages.stern.nyu.edu/~adamodar/pc/datasets/histimpl.xls"
+DAMODARAN_MONTHLY = "https://pages.stern.nyu.edu/~adamodar/pc/implprem/ERPbymonth.xlsx"
+
+
+def damodaran() -> pd.DataFrame:
+    """Implied equity risk premium and Treasury bond rate, in percent: year-end values (usable from the
+    following January) from 1960, monthly from 2008-09 (trailing-12-month cash flow version)."""
+    import xlrd
+    from openpyxl import load_workbook
+
+    sheet = xlrd.open_workbook(file_contents=_get(DAMODARAN_ANNUAL).content).sheet_by_index(0)
+    rows = {}
+    for i in range(sheet.nrows):
+        v = sheet.row_values(i)
+        if len(v) > 15 and isinstance(v[0], float) and 1950 < v[0] < 2100 and isinstance(v[15], float) and isinstance(v[10], float):
+            rows[pd.Timestamp(int(v[0]) + 1, 1, 1)] = (v[15] * 100, v[10] * 100)
+    annual = pd.DataFrame.from_dict(rows, orient="index", columns=["erp", "tbond"])
+    ws = load_workbook(io.BytesIO(_get(DAMODARAN_MONTHLY).content), read_only=True, data_only=True).worksheets[0]
+    rows = {}
+    for r in list(ws.iter_rows(values_only=True))[1:]:
+        if r[0] is not None and len(r) > 9 and isinstance(r[9], (int, float)) and isinstance(r[2], (int, float)):
+            rows[pd.Timestamp(r[0]).to_period("M").to_timestamp()] = (r[9] * 100, r[2] * 100)
+    monthly = pd.DataFrame.from_dict(rows, orient="index", columns=["erp", "tbond"])
+    if len(annual) < 40 or len(monthly) < 100:
+        raise RuntimeError(f"Damodaran files parsed to {len(annual)} annual and {len(monthly)} monthly rows")
+    out = pd.concat([annual.loc[:monthly.index[0] - pd.DateOffset(months=1)], monthly]).sort_index().round(3)
+    out.index.name = "date"
+    return out
+
+
 # ------------------------------------------------------------------- SSGA
 def spy_members() -> pd.DataFrame:
     """Current S&P 500 members as Yahoo symbols (from SPDR's daily SPY holdings file)."""
