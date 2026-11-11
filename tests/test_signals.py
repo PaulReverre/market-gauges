@@ -292,6 +292,8 @@ def test_support_check_splits_expensive_months():
     assert yes["months"] + no["months"] == int((score >= 75).sum())
     assert yes["h"]["1y"]["mean"] == 10 and no["h"]["1y"]["mean"] == 2 and s["now"]["supported"] in (True, False)
     assert FU.support_check(score, Y, eps, None) is None
+    late = eps.copy(); late.iloc[-3:] = np.nan                                  # the newest months are not published yet
+    assert FU.support_check(score, Y, late, baa)["now"]["supported"] == bool(late.dropna().iloc[-1] > 0)
 
 
 def test_fundamentals_percentile_orientation():

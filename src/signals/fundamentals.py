@@ -353,10 +353,12 @@ def support_check(score: pd.Series, Y: pd.DataFrame, eps_g: pd.Series, baa: pd.S
             row["h"][h] = None if len(y) < 6 else {"mean": round(float(y.mean()), 1), "hit": round(float((y > 0).mean() * 100))}
         rows.append(row)
     dot = d.loc["2000-01":"2000-12"]
+    g_now = None if g.dropna().empty else float(g.dropna().iloc[-1])            # latest published reading of each
+    w_now = None if widen.dropna().empty else float(widen.dropna().iloc[-1])
     return {"cut": cut, "rows": rows,
-            "now": {"eps_growth": None if g.dropna().empty else round(float(g.dropna().iloc[-1]), 1),
-                    "spread_chg": None if widen.dropna().empty else round(float(widen.dropna().iloc[-1]), 2),
-                    "supported": bool(ok.iloc[-1]) if bool(known.iloc[-1]) else None},
+            "now": {"eps_growth": None if g_now is None else round(g_now, 1),
+                    "spread_chg": None if w_now is None else round(w_now, 2),
+                    "supported": None if g_now is None or w_now is None else bool(g_now > 0 and w_now <= 0.3)},
             "dotcom": None if dot.empty or dot.k.sum() == 0 else {"supported_share": round(float(dot.ok[dot.k].mean() * 100)),
                                                                    "next_1y": None if dot["1y"].dropna().empty else round(float(dot["1y"].mean()), 1)}}
 
