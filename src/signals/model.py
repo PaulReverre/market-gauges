@@ -69,6 +69,27 @@ def count_episodes(mask: np.ndarray, gap: int = EPISODE_GAP) -> int:
 
 
 # -------------------------------------------------------------- composite
+TAIL = 10          # width of the buy and caution zones on the 0-100 scale
+TAIL_POWER = 0.5   # inside them, a score s is shown as TAIL * (s / TAIL) ** TAIL_POWER
+
+
+def stretch_tails(score: pd.Series) -> pd.Series:
+    """Spread out the two extreme zones so the ends of the scale stay rare.
+
+    The raw score is a percentile, so 1 meant "more fearful than 99% of days", which every sharp
+    selloff reaches. Inside the buy zone (and, mirrored, the caution zone) the shown score is the
+    square root of that rarity: 5 now means the most fearful 2.5% of days and 1 the most fearful
+    0.1% (for the AI gauge, nothing since 1998 has reached it; March 2020 came closest at about 1.4).
+    The zone edges (10 and 90) and everything outside
+    them are unchanged, so which days count as buy or caution days, and all evidence, are the same.
+    """
+    s = score.copy()
+    lo, hi = s < TAIL, s > 100 - TAIL
+    s[lo] = TAIL * (s[lo].clip(lower=0) / TAIL) ** TAIL_POWER
+    s[hi] = 100 - TAIL * ((100 - s[hi]).clip(lower=0) / TAIL) ** TAIL_POWER
+    return s
+
+
 def composite(fear_pct: pd.DataFrame, pillars: dict[str, list[str]], calendar: pd.DatetimeIndex) -> pd.DataFrame:
     """fear_pct: per-indicator point-in-time fear percentiles (0-1, high = fear).
 
@@ -80,7 +101,7 @@ def composite(fear_pct: pd.DataFrame, pillars: dict[str, list[str]], calendar: p
     used = [c for cols in pillars.values() for c in cols if c in p]
     n = p[used].notna().sum(axis=1)
     raw = raw.where(n >= 2)
-    score = 100 - expanding_pct(raw) * 100
+    score = stretch_tails(100 - expanding_pct(raw) * 100)
     out = pd.DataFrame({"raw": raw, "n": n, "score": score.reindex(calendar)})
     for k in pm:
         out[f"pillar_{k}"] = 100 - pm[k] * 100

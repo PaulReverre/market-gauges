@@ -139,7 +139,12 @@ def main() -> None:
     flows = soft("fred_fund_flows", lambda: F.fred_many(["BOGZ1FA653064100Q", "BOGZ1FA563064100Q"]), "FRED fund flows")
 
     # ---- gauges
-    extra = {"aaii": aaii, "alloc": alloc, "hy": hy["BAMLH0A0HYM2"] if "BAMLH0A0HYM2" in hy else None,
+    try:
+        spy_vol = F.yahoo_close(["SPY"], session, start="1993-01-01", field="Volume")["SPY"]
+    except Exception as e:  # noqa: BLE001 - one context row; the gauge does not need it
+        spy_vol = None
+        log.add("Yahoo SPY volume", False, note=f"{type(e).__name__}: {e}"[:200])
+    extra = {"spy_vol": spy_vol, "aaii": aaii, "alloc": alloc, "hy": hy["BAMLH0A0HYM2"] if "BAMLH0A0HYM2" in hy else None,
              "flows": G.fund_flow_pct(flows, z1) if not flows.empty and not z1.empty else None}
     spx_inds, spx = G.spx_indicators(px, cboe, pc, members, baa["BAA10Y"] if "BAA10Y" in baa else None, extra)
     g_spx, h_spx = G.build_gauge("spx", "S&P 500", "S&P 500", spx_inds, spx, G.SPX_PILLARS)

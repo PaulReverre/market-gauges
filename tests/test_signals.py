@@ -304,3 +304,12 @@ def test_fundamentals_percentile_orientation():
     by = {r["id"]: r for r in out["inputs"]}
     assert by["cape"]["pct"] > 95 and by["ecy"]["pct"] > 90 and by["dy"]["pct"] > 95   # high P/E, low yields: all read "expensive"
     assert out["score"] > 70 and out["zone"]["key"] in ("calm", "caution")     # both yardsticks agree it is expensive
+
+
+def test_stretch_tails_keeps_zones_and_spreads_the_extremes():
+    s = pd.Series([0.0, 0.1, 2.5, 7.4, 10.0, 50.0, 90.0, 97.5, 99.9, 100.0])
+    out = M.stretch_tails(s)
+    assert out.tolist()[4:7] == [10.0, 50.0, 90.0]                      # zone edges and the middle are untouched
+    assert np.allclose(out.iloc[[0, 1, 2]], [0.0, 1.0, 5.0]) and np.allclose(out.iloc[[7, 8, 9]], [95.0, 99.0, 100.0])
+    assert out.is_monotonic_increasing                                  # same ranking, so the same evidence
+    assert (M.stretch_tails(pd.Series(np.linspace(0, 100, 1001))) <= 10).sum() == 101   # same share of days in the buy zone

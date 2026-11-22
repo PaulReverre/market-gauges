@@ -106,8 +106,9 @@ def cached(name: str, fetch, log: SourceLog, label: str | None = None, index_col
 
 
 # ------------------------------------------------------------------ Yahoo
-def yahoo_close(symbols: list[str], session: date, start: str = "1990-01-01", chunk: int = 100) -> pd.DataFrame:
-    """Adjusted closes through `session` (today's unfinished bar is never included)."""
+def yahoo_close(symbols: list[str], session: date, start: str = "1990-01-01", chunk: int = 100,
+                field: str = "Close") -> pd.DataFrame:
+    """Adjusted closes (or another field, e.g. Volume) through `session`; today's unfinished bar is never included."""
     import yfinance as yf
 
     end = (session + timedelta(days=1)).isoformat()
@@ -125,7 +126,7 @@ def yahoo_close(symbols: list[str], session: date, start: str = "1990-01-01", ch
             _time.sleep(3 * (attempt + 1))
         if df is None or df.empty:
             continue
-        close = df["Close"] if isinstance(df.columns, pd.MultiIndex) else df[["Close"]].set_axis(batch, axis=1)
+        close = df[field] if isinstance(df.columns, pd.MultiIndex) else df[[field]].set_axis(batch, axis=1)
         parts.append(close)
     if not parts:
         raise RuntimeError("Yahoo returned no prices")

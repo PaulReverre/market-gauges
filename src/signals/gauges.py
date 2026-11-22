@@ -40,7 +40,7 @@ AI_BASKET = {
     "Neocloud & infrastructure": ["CRWV", "NBIS", "VRT"],
     "Power": ["GEV", "CEG", "VST", "BE"],
 }
-INDEX_SYMBOLS = ["^GSPC", "^VIX", "^VIX3M", "^VXN", "^SOX", "^NDX", "SMH"]
+INDEX_SYMBOLS = ["^GSPC", "^VIX", "^VIX3M", "^VXN", "^SOX", "^NDX", "SMH", "^VIX9D", "HYG", "IEF", "SPLV", "SPHB", "SPY"]
 
 SPX_PILLARS = {"Volatility": ["vix", "vix_ivp", "vix_ts", "vrp"], "Options positioning": ["pc_equity", "cor1m"]}
 AI_PILLARS = {"Semis & Nasdaq volatility": ["sox_rv", "vxn"], "Market stress": ["vix", "vix_ts"]}
@@ -68,7 +68,10 @@ def _breadth(members: pd.DataFrame, cal: pd.DatetimeIndex, min_names: int) -> di
     r = mem.apply(M.rsi)
     live = mem.notna().sum(axis=1)
     oversold = ((r < 30) & mem.notna()).sum(axis=1) / live.where(live >= min_names) * 100
-    return {"above50": above, "oversold": oversold}
+    chg = mem.pct_change(fill_method=None)
+    priced = chg.notna().sum(axis=1)
+    down = (chg < 0).sum(axis=1) / priced.where(priced >= min_names) * 100
+    return {"above50": above, "oversold": oversold, "down10": down.rolling(10).mean()}
 
 
 def fund_flow_pct(flows: pd.DataFrame, z1: pd.DataFrame) -> pd.Series | None:
@@ -214,6 +217,43 @@ def spx_indicators(px: pd.DataFrame, cboe: pd.DataFrame, pc: pd.DataFrame, membe
                      why="FRED now serves only three years of this series, too little to test. Its long-history "
                          "cousin, the Baa spread below, fails as a buy signal. Credit earns its place as a check on "
                          "the buy zone instead: see the credit check above.", series=hy_s, last=d_hy))
+    # ---- tested 2026-11-21: strong or moderate on their own, but none improved the score (see the README)
+    hyg, ief = _al(col(px, "HYG"), cal, 3)[0], _al(col(px, "IEF"), cal, 3)[0]
+    credit3m = -((hyg / ief) / (hyg / ief).shift(63) - 1) * 100
+    I.append(Ind("hy_tsy", "High-yield bonds vs Treasuries, 3 months", "%", "high", "context", pillar="Credit",
+                 source="HYG and IEF, via Yahoo",
+                 what="How far junk bonds (HYG) have lagged Treasuries (IEF) over 63 sessions. The free stand-in for "
+                      "credit default swap indices, which are licensed data.",
+                 why="Strong on its own since 2009: big credit sell-offs were followed by above-average stock returns. "
+                     "Left out because with 2008 included it said buy months too early, and adding it made the "
+                     "buy zone's 3-month record worse. Shown as confirmation, alongside the credit check.",
+                 series=credit3m, last=_oldest(_al(col(px, "HYG"), cal)[1], _al(col(px, "IEF"), cal)[1])))
+    v9, d9 = _al(col(px, "^VIX9D"), cal, 3)
+    I.append(Ind("vix9d", "9-day VIX / VIX", "x", "high", "context", nd=2, pillar="Volatility", source="Cboe, via Yahoo",
+                 what="Next-nine-days implied volatility relative to 30-day: panic about the coming week.",
+                 why="Passes on its own on both sides since 2013, but adds nothing once VIX and its 3-month term "
+                     "structure are in the score.", series=v9 / vix, last=_oldest(d9, d_vix)))
+    lv, hb = _al(col(px, "SPLV"), cal, 3)[0], _al(col(px, "SPHB"), cal, 3)[0]
+    I.append(Ind("lowvol", "Low-volatility vs high-beta stocks, 3 months", "%", "high", "context", pillar="Rotation",
+                 source="SPLV and SPHB, via Yahoo",
+                 what="How much the S&P 500's least volatile stocks have beaten its most volatile ones over 63 sessions.",
+                 why="Strong on its own since 2013, but it duplicates the volatility inputs: adding it left the buy "
+                     "zone unchanged and weakened the 12-month record.", series=((lv / hb) / (lv / hb).shift(63) - 1) * 100,
+                 last=spx.index[-1]))
+    spy_vol = extra.get("spy_vol")
+    if spy_vol is not None and not spy_vol.dropna().empty:
+        sv, d_sv = _al(spy_vol.where(spy_vol > 0), cal, 3)
+        I.append(Ind("spy_vol", "SPY volume vs its 50-day average, 5 days", "x", "high", "context", nd=2,
+                     pillar="Selling pressure", source="SPY, via Yahoo",
+                     what="Trading volume in the largest S&P 500 fund relative to its recent norm: capitulation selling.",
+                     why="Passes on its own in both halves of the sample, but adding it made the buy zone fire more "
+                         "often with weaker results.", series=(sv / sv.rolling(50).mean()).rolling(5).mean(), last=d_sv))
+    if br.get("down10") is not None:
+        I.append(Ind("down10", "S&P 500 stocks falling each day, 10-day average", "%", "high", "context", nd=0,
+                     pillar="Selling pressure", source="Yahoo, current SPY members",
+                     what="Share of index members that closed lower each day, averaged over two weeks.",
+                     why="A moderate edge on its own in both halves, but adding it weakened the score at 12 months.",
+                     series=br["down10"], last=d_mem))
     return [i for i in I if i.series is not None and not i.series.dropna().empty], spx
 
 
@@ -282,6 +322,15 @@ def ai_indicators(px: pd.DataFrame, basket: pd.DataFrame) -> tuple[list[Ind], pd
                 "applied backwards. Shown because it describes the damage.",
             series=bk50, last=b.dropna(how="all").index[-1] if not b.dropna(how="all").empty else None),
     ]
+    hyg, ief = (_al(col(c), cal, 3) for c in ("HYG", "IEF"))
+    if hyg[1] is not None and ief[1] is not None:
+        I.append(Ind("hy_tsy", "High-yield bonds vs Treasuries, 3 months", "%", "high", "context", pillar="Credit",
+                     source="HYG and IEF, via Yahoo",
+                     what="How far junk bonds (HYG) have lagged Treasuries (IEF) over 63 sessions. The free stand-in "
+                          "for credit default swap indices, which are licensed data.",
+                     why="Strong on its own since 2009, but with 2008 included it said buy too early, and as part of "
+                         "the score it halved the number of buy signals without improving them.",
+                     series=-((hyg[0] / ief[0]) / (hyg[0] / ief[0]).shift(63) - 1) * 100, last=_oldest(hyg[1], ief[1])))
     if "NVDA" in b:
         I.append(Ind("nvda_rv", "NVDA realized volatility (20d)", "%", "high", "context", nd=0, pillar="Volatility", source="Yahoo",
                      what="Nvidia's actual 20-day volatility, annualized.",

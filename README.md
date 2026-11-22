@@ -16,6 +16,16 @@ row in the detail for that input's own chart and track record.
 0 is extreme fear (historically the time to buy), 100 is complacency. A score of
 10 or lower is the **buy zone**; 90 or higher is the **caution zone**.
 
+Inside those two zones the scale is stretched (since 2026-11-21) so its ends stay
+rare: a 5 is more extreme than 97.5% of past days and a 1 than 99.9%. Before,
+the score was a plain percentile, so 1 meant "more fearful than 99% of days",
+which every sharp sell-off reached. The zone edges and everything between them
+are unchanged, so the same days count as buy and caution days and every
+evidence table is the same; only how far the needle travels inside a zone
+changed. On the 2026-11-20 close this moved the AI gauge from 1.3 to 3.6 and
+the S&P 500 from 7.4 to 8.6. For the AI gauge, nothing since 1998 has reached 1;
+March 2020 came closest at 1.4.
+
 ## Alerts and refreshing
 
 - **Email alerts.** When a gauge's score first closes at or below its lower
@@ -101,6 +111,28 @@ breadth, Nebius GPU spot prices (too little history to test).
 | High-yield credit spreads | Shown as context (FRED serves only three years). Its long-history cousin, the Baa spread, fails as a signal but works as a **credit check**: buy-zone days with credit blowing out returned about half as much over 12 months as the rest |
 | Equity fund flows | Shown as context from the Fed's quarterly accounts. Heavy outflows preceded better returns, but the data arrives 10 weeks late; weekly ICI data is closed to scripts |
 
+**Tested on request (2026-11-21)**: about 30 more candidates for the S&P 500
+gauge and 17 for the AI gauge, each judged alone, added to the gauge, and at 18
+named market lows since 2002. None made the scores reliably better, so none was
+added to a score:
+
+| Candidate | Result |
+|---|---|
+| Credit default swaps (CDX) | Licensed data; no free source. Tested the free proxies instead |
+| High-yield bonds vs Treasuries (HYG/IEF), 1 and 3 months, and drawdown | Strong alone since 2009, and it looked like an improvement on that sample. Ranked early enough to include 2008, it said buy months too early and made the buy zone worse. **Shown as context on both gauges** |
+| Baa spread change, Baa minus Aaa, investment grade vs Treasuries, St. Louis Fed and Chicago Fed stress indexes, TED spread | No edge alone; each made the gauge worse |
+| MOVE (Treasury volatility), 10-year yield moves, Treasuries vs stocks | Weak or no edge alone; made the gauge worse |
+| 9-day VIX / VIX | Strong alone on both sides since 2013, but adds nothing to VIX and its term structure. **Shown as context** |
+| Low-volatility vs high-beta stocks | Strong alone since 2013, duplicates the volatility inputs. **Shown as context** |
+| Capitulation: SPY volume surge, share of stocks falling | Pass alone in both halves, but made the buy zone fire more often with weaker results. **Shown as context** |
+| Down-volume share, 90% down days, new 52-week lows, S&P 500 volume | Weak or no edge alone; made the gauge worse |
+| Sector rotation: utilities or staples vs discretionary, small vs large, gold vs stocks | Weak or no edge alone; made the gauge worse |
+| Jobless claims | Made the gauge worse |
+| Yield curve (10-year minus 3-month) | Improved both gauges' statistics, especially the caution side. Rejected: the S&P gain rested on two episodes (2002, 2021), and on the AI gauge it moved buy signals into the 2023–25 inverted-curve bull market, a coincidence of one macro cycle rather than a fear signal |
+| AI: SMH, SOXX and NVDA volume surges | SOXX helped, the near-identical SMH hurt badly: the "gain" is noise |
+| AI: semis vs S&P volatility, VXN / VIX, VVIX, 9-day VIX, tech or Nasdaq-100 relative strength, market-wide put/call and implied correlation | Each made the AI gauge worse |
+| Margin debt | FINRA now blocks automated downloads of its statistics |
+
 **Rejected as signals**: drawdown from the 52-week high and distance from the
 200-day average (buying them lost money in 2000–02 and 2008), credit spreads,
 semis' relative strength.
@@ -178,6 +210,14 @@ them:
 | Damodaran's implied equity risk premium + Treasury yield (forward-looking; currently implies about 9% a year) | Fits the full sample since 1961, but out of sample since 1992 it missed by 4.0 points a year against 3.8 for the average. Shown as context |
 | Forward P/E | Still untestable: no free history |
 
+Also tested on 2026-11-21 and rejected with the same checks, all listed on the
+dashboard: equity share of new financing (Baker-Wurgler issuance), net equity
+issuance (dilution), corporate debt / GDP, corporate leverage, interest
+coverage, money-market funds / equities, earnings yield minus Baa yield, the
+10-year Treasury yield and real yield, the Baa spread, bank credit and M2
+growth. None predicted 10-year returns, and each made the five-measure blend's
+forecast worse.
+
 Ranking the inputs as percentiles before fitting was also tried and rejected: it
 discards how far beyond its history a reading is. Index-level price to sales,
 margins and Tobin's Q use the Fed's and BEA's nonfinancial-corporate accounts,
@@ -191,7 +231,7 @@ timing.
 .github/workflows/refresh.yml   02:00 UTC Tue–Sat (+ 10:00 UTC retry)
   └─ python -m signals.build
        fetch    Yahoo (indices, 503 members, AI basket) · Cboe (COR1M, VVIX, SKEW, put/call)
-                FRED (Z.1, corporate accounts, Baa, HY, 10y) · shillerdata.com · Damodaran (NYU) · AAII · SSGA · Nebius · Finnhub
+                FRED (Z.1, corporate accounts, Baa, HY, 10y) · HYG, IEF, SPLV, SPHB, 9-day VIX, SPY volume (Yahoo) · shillerdata.com · Damodaran (NYU) · AAII · SSGA · Nebius · Finnhub
        score    src/signals/gauges.py, model.py, fundamentals.py
        write    data/signals.json, data/signals_history.json, data/state/*
   └─ python -m signals.alerts --send   (GitHub issue when a threshold is crossed)

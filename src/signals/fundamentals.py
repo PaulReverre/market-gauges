@@ -52,6 +52,20 @@ ERA = 360               # months in a measure's "own era" average
 ERA_MIN = 180           # months needed before that average exists
 ERA_RANK = 120          # months of era readings before they are ranked
 ZONE_LABEL = {"buy": "Very cheap", "fear": "Cheap", "neutral": "Fair", "calm": "Expensive", "caution": "Very expensive"}
+ALSO_REJECTED = [   # tested 2026-11-21 with the same fit, out-of-sample and split-half checks; none added
+    {"name": "Equity share of new financing", "why": "The Baker-Wurgler issuance signal, from the Fed's flow accounts. "
+                                                     "No relation to later returns at any horizon; adding it to the five made the forecast much worse."},
+    {"name": "Corporate debt / GDP", "why": "No relation to later returns; out of sample it pointed the wrong way."},
+    {"name": "Corporate leverage at market value", "why": "Mostly a mirror of valuation, and its sign flipped after 1988."},
+    {"name": "Interest coverage (profits / net interest)", "why": "No relation to later returns at any horizon."},
+    {"name": "Money-market funds / equities", "why": "Cash on the sidelines: no relation to later returns."},
+    {"name": "Earnings yield minus Baa yield", "why": "A credit-adjusted risk premium: weak fit, and worse than the average out of sample."},
+    {"name": "10-year Treasury yield", "why": "Worked before 1988 and not since; worse than the average out of sample."},
+    {"name": "Real 10-year yield", "why": "No relation to later returns."},
+    {"name": "Baa credit spread", "why": "No relation to 10-year returns."},
+    {"name": "Bank credit growth; M2 growth", "why": "No relation to later returns."},
+    {"name": "Margin debt", "why": "FINRA now blocks automated downloads of its margin statistics, so it cannot be kept current."},
+]
 UNTESTED = [
     {"name": "Forward P/E", "why": "Analyst estimates are proprietary (FactSet, LSEG). No free source has more than a few "
                                    "years of history, and a 10-year test needs decades."},
@@ -238,10 +252,11 @@ def metrics(sh: pd.DataFrame, z1: pd.DataFrame, fr: pd.DataFrame, spx: pd.Series
                    "a real yield with a nominal one.",
                series=e_lag / price * 100 - gs10, now=e_last / px_now * 100 - gs10_now,
                official=last(e_lag / price * 100 - gs10), official_as_of=sh_month),
-        Metric("buyback", "Net buyback yield", "%", 2, "low", "context", source=z1src,
-               what="Net share repurchases of nonfinancial companies over four quarters, as a percent of market value.",
-               why="Rejected on its own: no usable relation to later returns. It earns its keep only inside "
-                   "shareholder yield.",
+        Metric("buyback", "Net buyback yield (dilution when negative)", "%", 2, "low", "context", source=z1src,
+               what="Net share repurchases of nonfinancial companies over four quarters, as a percent of market value. "
+                    "Negative means companies issued more shares than they bought back: dilution.",
+               why="Rejected on its own: neither buybacks nor dilution had any relation to later returns, at 1, 3, 5 "
+                   "or 10 years. It earns its keep only inside shareholder yield.",
                series=q(buyback), now=last(buyback) / k, official=last(buyback), official_as_of=ql),
         Metric("margin", "Net profit margin", "%", 1, "high", "context", source="FRED (BEA)",
                what="After-tax profits of nonfinancial companies as a percent of their gross value added.",
@@ -461,7 +476,7 @@ def build(sh: pd.DataFrame, z1: pd.DataFrame, fr: pd.DataFrame, spx: pd.Series, 
         "treasury10": None if dgs10 is None or dgs10.dropna().empty else round(float(dgs10.dropna().iloc[-1]), 2),
         "now": {"zone": next(z for z in zones if z["key"] == zone["key"]), "base": odds["base"]},
         "odds": odds, "support": None if eps_g is None else support_check(score, Y, eps_g, baa),
-        "inputs": rows, "untested": UNTESTED,
+        "inputs": rows, "untested": UNTESTED, "rejected": ALSO_REJECTED,
         "spark": [round(float(v), 1) for v in score.iloc[-180:].values],
     }
     return out, charts
